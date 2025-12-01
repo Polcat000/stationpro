@@ -1,0 +1,224 @@
+[
+  {
+    "PartCallout": "CONN-USB-C-001",
+    "PartSeries": "USB-C Connectors",
+    "PartWidth_mm": 8.94,
+    "PartHeight_mm": 3.26,
+    "PartLength_mm": 7.35,
+    "SmallestLateralFeature_um": 150,
+    "SmallestDepthFeature_um": 50,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-usbc-top-1",
+        "Name": "Top Surface Pins",
+        "Face": "Top",
+        "ZoneDepth_mm": 0.5,
+        "ZoneOffset_mm": 0.25,
+        "SmallestLateralFeature_um": 100,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  },
+  {
+    "PartCallout": "CONN-USB-C-002",
+    "PartSeries": "USB-C Connectors",
+    "PartWidth_mm": 8.94,
+    "PartHeight_mm": 3.26,
+    "PartLength_mm": 9.50,
+    "SmallestLateralFeature_um": 120,
+    "SmallestDepthFeature_um": 40,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-usbc2-top-1",
+        "Name": "Contact Array",
+        "Face": "Top",
+        "ZoneDepth_mm": 0.4,
+        "ZoneOffset_mm": 0.2,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-usbc2-front-1",
+        "Name": "Mating Face",
+        "Face": "Front",
+        "ZoneDepth_mm": 1.0,
+        "ZoneOffset_mm": 0.5,
+        "SmallestLateralFeature_um": 80,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 4
+      }
+    ]
+  },
+  {
+    "PartCallout": "CBL-FLEX-010",
+    "PartSeries": "Flex Cables",
+    "PartWidth_mm": 25.0,
+    "PartHeight_mm": 0.3,
+    "PartLength_mm": 150.0,
+    "SmallestLateralFeature_um": 200,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-flex-top-1",
+        "Name": "Trace Inspection",
+        "Face": "Top",
+        "ZoneDepth_mm": 0.1,
+        "ZoneOffset_mm": 0.05,
+        "SmallestLateralFeature_um": 150,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  },
+  {
+    "PartCallout": "PCB-CTRL-100",
+    "PartSeries": "Controller Boards",
+    "PartWidth_mm": 85.0,
+    "PartHeight_mm": 12.5,
+    "PartLength_mm": 56.0,
+    "SmallestLateralFeature_um": 75,
+    "SmallestDepthFeature_um": 25,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-pcb-top-1",
+        "Name": "Component Placement",
+        "Face": "Top",
+        "ZoneDepth_mm": 8.0,
+        "ZoneOffset_mm": 4.0,
+        "SmallestLateralFeature_um": 75,
+        "SmallestDepthFeature_um": 25,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-pcb-bottom-1",
+        "Name": "Solder Joints",
+        "Face": "Bottom",
+        "ZoneDepth_mm": 2.0,
+        "ZoneOffset_mm": 1.0,
+        "SmallestLateralFeature_um": 100,
+        "RequiredCoverage_pct": 95,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  },
+  {
+    "PartCallout": "CONN-HDR-040",
+    "PartSeries": "Pin Headers",
+    "PartWidth_mm": 50.8,
+    "PartHeight_mm": 8.5,
+    "PartLength_mm": 2.54,
+    "SmallestLateralFeature_um": 250,
+    "SmallestDepthFeature_um": 100,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-hdr-top-1",
+        "Name": "Pin Tops",
+        "Face": "Top",
+        "ZoneDepth_mm": 2.0,
+        "ZoneOffset_mm": 1.0,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-hdr-left-1",
+        "Name": "Pin Alignment Left",
+        "Face": "Left",
+        "ZoneDepth_mm": 6.0,
+        "ZoneOffset_mm": 3.0,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  },
+  {
+    "PartCallout": "SENS-PRESS-001",
+    "PartSeries": "Pressure Sensors",
+    "PartWidth_mm": 6.4,
+    "PartHeight_mm": 4.8,
+    "PartLength_mm": 6.4,
+    "SmallestLateralFeature_um": 50,
+    "SmallestDepthFeature_um": 20,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-sens-top-1",
+        "Name": "Membrane Surface",
+        "Face": "Top",
+        "ZoneDepth_mm": 0.5,
+        "ZoneOffset_mm": 0.25,
+        "SmallestLateralFeature_um": 50,
+        "SmallestDepthFeature_um": 20,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 5
+      }
+    ]
+  },
+  {
+    "PartCallout": "ENCL-ALU-200",
+    "PartSeries": "Aluminum Enclosures",
+    "PartWidth_mm": 200.0,
+    "PartHeight_mm": 50.0,
+    "PartLength_mm": 300.0,
+    "SmallestLateralFeature_um": 500,
+    "SmallestDepthFeature_um": 200,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-encl-top-1",
+        "Name": "Top Surface Finish",
+        "Face": "Top",
+        "ZoneDepth_mm": 2.0,
+        "ZoneOffset_mm": 1.0,
+        "RequiredCoverage_pct": 90,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-encl-front-1",
+        "Name": "Front Panel Features",
+        "Face": "Front",
+        "ZoneDepth_mm": 5.0,
+        "ZoneOffset_mm": 2.5,
+        "SmallestLateralFeature_um": 300,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-encl-right-1",
+        "Name": "Side Ventilation",
+        "Face": "Right",
+        "ZoneDepth_mm": 3.0,
+        "ZoneOffset_mm": 1.5,
+        "RequiredCoverage_pct": 85,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  },
+  {
+    "PartCallout": "BATT-CELL-18650",
+    "PartSeries": "Battery Cells",
+    "PartWidth_mm": 18.6,
+    "PartHeight_mm": 18.6,
+    "PartLength_mm": 65.2,
+    "SmallestLateralFeature_um": 100,
+    "InspectionZones": [
+      {
+        "ZoneID": "zone-batt-top-1",
+        "Name": "Positive Terminal",
+        "Face": "Top",
+        "ZoneDepth_mm": 1.5,
+        "ZoneOffset_mm": 0.75,
+        "SmallestLateralFeature_um": 100,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      },
+      {
+        "ZoneID": "zone-batt-bottom-1",
+        "Name": "Negative Terminal",
+        "Face": "Bottom",
+        "ZoneDepth_mm": 0.5,
+        "ZoneOffset_mm": 0.25,
+        "RequiredCoverage_pct": 100,
+        "MinPixelsPerFeature": 3
+      }
+    ]
+  }
+]

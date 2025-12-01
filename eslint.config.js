@@ -28,4 +28,12 @@ export default defineConfig([
       },
     },
   },
+  // shadcn/ui components export both components and helpers (e.g., buttonVariants)
+  // This is by design - disable react-refresh rule for these files
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
