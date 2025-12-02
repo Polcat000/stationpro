@@ -192,7 +192,6 @@ describe('Stations Library Page', () => {
         expect(screen.getByText('Manufacturer')).toBeInTheDocument()
         expect(screen.getByText('Model')).toBeInTheDocument()
         expect(screen.getByText('Type')).toBeInTheDocument()
-        expect(screen.getByText('Key Specs')).toBeInTheDocument()
         expect(screen.getByText('Active')).toBeInTheDocument()
       })
     })

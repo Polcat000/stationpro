@@ -15,7 +15,7 @@ import {
 import { useState } from 'react'
 import type { Component, LaserLineProfiler, AreascanCamera, LinescanCamera, Lens, SnapshotSensor } from '@/lib/schemas/component'
 import { ComponentsDataGrid } from '../ComponentsDataGrid'
-import { columns, formatKeySpecs, typeLabels } from '../columns'
+import { columns, typeLabels } from '../columns'
 
 const mockLaserProfiler: LaserLineProfiler = {
   componentId: 'LMI-G2-001',
@@ -118,14 +118,13 @@ function TestWrapper({ components, onRowClick }: TestWrapperProps) {
 
 describe('ComponentsDataGrid', () => {
   describe('AC-2.8.2: Data Grid Renders with Sortable Columns', () => {
-    it('renders all 5 columns', () => {
+    it('renders base columns', () => {
       const onRowClick = vi.fn()
       render(<TestWrapper components={mockComponents} onRowClick={onRowClick} />)
 
       expect(screen.getByText('Manufacturer')).toBeInTheDocument()
       expect(screen.getByText('Model')).toBeInTheDocument()
       expect(screen.getByText('Type')).toBeInTheDocument()
-      expect(screen.getByText('Key Specs')).toBeInTheDocument()
       expect(screen.getByText('Active')).toBeInTheDocument()
     })
 
@@ -276,29 +275,5 @@ describe('Type Labels', () => {
   })
 })
 
-describe('formatKeySpecs', () => {
-  it('formats LaserLineProfiler correctly', () => {
-    const result = formatKeySpecs(mockLaserProfiler)
-    expect(result).toBe('FOV: 50-100mm, Z: 150mm')
-  })
-
-  it('formats AreascanCamera correctly', () => {
-    const result = formatKeySpecs(mockAreascanCamera)
-    expect(result).toBe('2048×2048px, 55fps')
-  })
-
-  it('formats LinescanCamera correctly', () => {
-    const result = formatKeySpecs(mockLinescanCamera)
-    expect(result).toBe('4096px, 140kHz')
-  })
-
-  it('formats Lens correctly', () => {
-    const result = formatKeySpecs(mockLens)
-    expect(result).toBe('Telecentric, f/4')
-  })
-
-  it('formats SnapshotSensor correctly', () => {
-    const result = formatKeySpecs(mockSnapshotSensor)
-    expect(result).toBe('FOV: 25×25mm')
-  })
-})
+// Note: formatKeySpecs was removed in favor of individual spec columns
+// Users can now toggle visibility of individual spec columns via the column config dropdown

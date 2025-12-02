@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { ComponentEntryWizard } from '@/components/wizards/ComponentEntryWizard'
 import { ComponentsDataGrid } from './ComponentsDataGrid'
-import { columns } from './columns'
+import { columns, specColumnIds } from './columns'
 import { ComponentsFilterPanel } from './ComponentsFilterPanel'
 import { ComponentsFilterChip } from './ComponentsFilterChip'
 import { ComponentsColumnConfigDropdown } from './ComponentsColumnConfigDropdown'
@@ -29,6 +29,20 @@ import { DeleteComponentDialog } from './DeleteComponentDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-components-columns'
+
+/**
+ * Default column visibility state.
+ * Spec columns are hidden by default; users opt-in to what they need.
+ * Base columns (Manufacturer, Model, componentType) and active remain visible.
+ */
+function getDefaultColumnVisibility(): VisibilityState {
+  const visibility: VisibilityState = {}
+  // Hide all spec columns by default
+  for (const columnId of specColumnIds) {
+    visibility[columnId] = false
+  }
+  return visibility
+}
 
 export interface ComponentFilters {
   model: string
@@ -67,16 +81,20 @@ export function ComponentsTab() {
   // TanStack Table State
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    getDefaultColumnVisibility
+  )
 
-  // Load column visibility from localStorage
+  // Load column visibility from localStorage (merges with defaults)
   useEffect(() => {
     const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
     if (saved) {
       try {
-        setColumnVisibility(JSON.parse(saved))
+        const parsed = JSON.parse(saved) as VisibilityState
+        // Merge saved preferences with defaults (saved preferences take precedence)
+        setColumnVisibility((prev) => ({ ...prev, ...parsed }))
       } catch {
-        // Ignore invalid JSON
+        // Ignore invalid JSON, keep defaults
       }
     }
   }, [])
