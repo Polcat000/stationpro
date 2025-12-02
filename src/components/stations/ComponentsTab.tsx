@@ -1,0 +1,287 @@
+// src/components/stations/ComponentsTab.tsx
+// Main container for Components tab (AC 2.8.2)
+// Ref: docs/sprint-artifacts/2-8-components-library-screen.md
+
+import { useState, useMemo, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  type SortingState,
+  type ColumnFiltersState,
+  type VisibilityState,
+} from '@tanstack/react-table'
+import { componentsQueryOptions } from '@/lib/queries/components'
+import { componentsRepository } from '@/lib/repositories/componentsRepository'
+import type { Component } from '@/lib/schemas/component'
+import { toast } from 'sonner'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { ComponentEntryWizard } from '@/components/wizards/ComponentEntryWizard'
+import { ComponentsDataGrid } from './ComponentsDataGrid'
+import { columns } from './columns'
+import { ComponentsFilterPanel } from './ComponentsFilterPanel'
+import { ComponentsFilterChip } from './ComponentsFilterChip'
+import { ComponentsColumnConfigDropdown } from './ComponentsColumnConfigDropdown'
+import { ComponentDetailPanel } from './ComponentDetailPanel'
+import { DeleteComponentDialog } from './DeleteComponentDialog'
+import { Skeleton } from '@/components/ui/skeleton'
+
+const COLUMN_VISIBILITY_KEY = 'stationpro-components-columns'
+
+export interface ComponentFilters {
+  model: string
+  manufacturers: string[]
+  types: string[]
+}
+
+const defaultFilters: ComponentFilters = {
+  model: '',
+  manufacturers: [],
+  types: [],
+}
+
+function countActiveFilters(filters: ComponentFilters): number {
+  let count = 0
+  if (filters.model) count++
+  if (filters.manufacturers.length > 0) count++
+  if (filters.types.length > 0) count++
+  return count
+}
+
+export function ComponentsTab() {
+  const queryClient = useQueryClient()
+  const { data: components = [], isLoading } = useQuery(componentsQueryOptions)
+
+  // UI State
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false)
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false)
+  const [selectedComponent, setSelectedComponent] = useState<Component | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  // Filter State
+  const [filters, setFilters] = useState<ComponentFilters>(defaultFilters)
+
+  // TanStack Table State
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+
+  // Load column visibility from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
+    if (saved) {
+      try {
+        setColumnVisibility(JSON.parse(saved))
+      } catch {
+        // Ignore invalid JSON
+      }
+    }
+  }, [])
+
+  // Persist column visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility))
+  }, [columnVisibility])
+
+  // Convert ComponentFilters to TanStack column filters
+  useEffect(() => {
+    const newFilters: ColumnFiltersState = []
+
+    if (filters.model) {
+      newFilters.push({ id: 'Model', value: filters.model })
+    }
+    if (filters.manufacturers.length > 0) {
+      newFilters.push({ id: 'Manufacturer', value: filters.manufacturers })
+    }
+    if (filters.types.length > 0) {
+      newFilters.push({ id: 'componentType', value: filters.types })
+    }
+
+    setColumnFilters(newFilters)
+  }, [filters])
+
+  // Get unique manufacturers for multi-select
+  const uniqueManufacturers = useMemo(() => {
+    const mfrSet = new Set<string>()
+    components.forEach((c) => {
+      if (c.Manufacturer) {
+        mfrSet.add(c.Manufacturer)
+      }
+    })
+    return Array.from(mfrSet).sort()
+  }, [components])
+
+  // TanStack Table instance
+  const table = useReactTable({
+    data: components,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => componentsRepository.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['components'] })
+      toast.success('Component deleted')
+      setDeleteDialogOpen(false)
+      setDetailPanelOpen(false)
+      setSelectedComponent(null)
+    },
+    onError: () => {
+      toast.error('Failed to delete component')
+    },
+  })
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: (component: Component) => componentsRepository.save(component),
+    onSuccess: (_, updatedComponent) => {
+      queryClient.invalidateQueries({ queryKey: ['components'] })
+      toast.success('Component updated successfully')
+      setEditModalOpen(false)
+      // Keep panel open and update with new data
+      setSelectedComponent(updatedComponent)
+    },
+    onError: () => {
+      toast.error('Failed to update component')
+    },
+  })
+
+  const handleRowClick = (component: Component) => {
+    setSelectedComponent(component)
+    setDetailPanelOpen(true)
+  }
+
+  const handleEdit = () => {
+    setEditModalOpen(true)
+  }
+
+  const handleDelete = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (selectedComponent) {
+      deleteMutation.mutate(selectedComponent.componentId)
+    }
+  }
+
+  const handleEditComplete = (data: Component) => {
+    updateMutation.mutate(data)
+  }
+
+  const handleClearFilters = () => {
+    setFilters(defaultFilters)
+    setFilterPanelOpen(false)
+  }
+
+  const activeFilterCount = countActiveFilters(filters)
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col gap-4" data-testid="components-loading-skeleton">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+        <div className="flex-1">
+          <Skeleton className="h-full w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (components.length === 0) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-4 text-muted-foreground">
+        <p className="text-lg">No components imported yet</p>
+        <p className="text-sm">
+          Import components via Data Import or add them manually using the Component Entry Wizard.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Components Library</h2>
+        <div className="flex items-center gap-2">
+          <ComponentsFilterChip
+            activeCount={activeFilterCount}
+            onClick={() => setFilterPanelOpen(true)}
+          />
+          <ComponentsColumnConfigDropdown
+            table={table}
+            lockedColumns={['Manufacturer']}
+          />
+        </div>
+      </div>
+
+      {/* Data Grid */}
+      <div className="flex-1 overflow-auto">
+        <ComponentsDataGrid table={table} onRowClick={handleRowClick} />
+      </div>
+
+      {/* Filter Panel */}
+      <ComponentsFilterPanel
+        open={filterPanelOpen}
+        onOpenChange={setFilterPanelOpen}
+        filters={filters}
+        onFiltersChange={setFilters}
+        uniqueManufacturers={uniqueManufacturers}
+        onClearAll={handleClearFilters}
+      />
+
+      {/* Detail Panel */}
+      <ComponentDetailPanel
+        open={detailPanelOpen}
+        onOpenChange={setDetailPanelOpen}
+        component={selectedComponent}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      {/* Edit Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedComponent && (
+            <ComponentEntryWizard
+              defaultValues={selectedComponent}
+              onComplete={handleEditComplete}
+              onCancel={() => setEditModalOpen(false)}
+              isEditMode
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <DeleteComponentDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        componentName={selectedComponent ? `${selectedComponent.Manufacturer} ${selectedComponent.Model}` : ''}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deleteMutation.isPending}
+      />
+    </div>
+  )
+}

@@ -1,10 +1,11 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { Component } from '@/types/domain'
+import { componentsRepository } from '@/lib/repositories/componentsRepository'
+import type { Component } from '@/lib/schemas/component'
 
 export type { Component }
 
 export const componentsQueryOptions = queryOptions({
   queryKey: ['components'],
-  queryFn: async () => [] as Component[],
+  queryFn: () => componentsRepository.getAll(),
   staleTime: Infinity,
 })

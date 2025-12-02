@@ -61,7 +61,8 @@ export function PartEntryWizard({
   const [currentStep, setCurrentStep] = useState(0)
 
   const form = useForm<PartFormInput>({
-    resolver: zodResolver(partFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(partFormSchema as any),
     mode: 'onChange',
     defaultValues: {
       PartCallout: '',

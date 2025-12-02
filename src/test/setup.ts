@@ -6,6 +6,23 @@
 // This adds matchers like: toBeInTheDocument(), toHaveTextContent(), etc.
 import '@testing-library/jest-dom'
 
+// Mock pointer capture methods for radix-ui Select components in jsdom
+// These methods don't exist in jsdom but are used by radix-ui
+if (typeof Element.prototype.hasPointerCapture !== 'function') {
+  Element.prototype.hasPointerCapture = () => false
+}
+if (typeof Element.prototype.setPointerCapture !== 'function') {
+  Element.prototype.setPointerCapture = () => {}
+}
+if (typeof Element.prototype.releasePointerCapture !== 'function') {
+  Element.prototype.releasePointerCapture = () => {}
+}
+
+// Mock scrollIntoView for radix-ui Select components
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 // Silence console.error and console.warn in tests unless explicitly testing them
 // This keeps test output clean while still allowing console.log for debugging
 const originalError = console.error

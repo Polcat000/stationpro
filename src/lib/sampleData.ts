@@ -1,15 +1,18 @@
 // src/lib/sampleData.ts
-// Sample data loader - fetches JSON files and populates TanStack Query cache
+// Sample data loader - fetches JSON files and persists to localStorage + query cache
 
 import type { QueryClient } from '@tanstack/react-query'
-import type { Part, Component } from '@/types/domain'
+import type { Part } from '@/types/domain'
+import type { Component } from '@/lib/schemas/component'
+import { partsRepository } from '@/lib/repositories/partsRepository'
+import { componentsRepository } from '@/lib/repositories/componentsRepository'
 
 /**
- * Loads sample parts and components data into the query cache.
+ * Loads sample parts and components data into localStorage and query cache.
  *
  * Fetches:
- * - /data/sample-parts.json → queryClient.setQueryData(['parts'], ...)
- * - /data/sample-components.json → queryClient.setQueryData(['components'], ...)
+ * - /data/sample-parts.json → persists to localStorage, updates query cache
+ * - /data/sample-components.json → persists to localStorage, updates query cache
  *
  * @param queryClient - TanStack Query client instance
  * @throws Error if fetch fails
@@ -31,6 +34,11 @@ export async function loadSampleData(queryClient: QueryClient): Promise<void> {
   const parts: Part[] = await partsResponse.json()
   const components: Component[] = await componentsResponse.json()
 
+  // Persist to localStorage via repositories
+  await partsRepository.upsertMany(parts)
+  await componentsRepository.upsertMany(components)
+
+  // Update query cache
   queryClient.setQueryData(['parts'], parts)
   queryClient.setQueryData(['components'], components)
 }

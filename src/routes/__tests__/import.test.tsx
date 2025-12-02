@@ -226,7 +226,7 @@ describe('Data Import Screen (Story 2.2)', () => {
       })
     })
 
-    it('Add Manually card shows placeholder toast (Components)', async () => {
+    it('Add Manually card opens Component Entry wizard modal (Components)', async () => {
       renderWithRouter(<ImportPage />, { router: { initialPath: '/import' } })
 
       // Switch to Components tab
@@ -236,7 +236,10 @@ describe('Data Import Screen (Story 2.2)', () => {
       const addCard = await screen.findByText('Add Manually')
       await user.click(addCard.closest('button')!)
 
-      expect(toast).toHaveBeenCalledWith('Manual entry wizard coming in Story 2.6')
+      // Modal should open with title
+      await waitFor(() => {
+        expect(screen.getByText('Add Component Manually')).toBeInTheDocument()
+      })
     })
 
     it('Load Sample Data card loads data and navigates to /stations (Components)', async () => {

@@ -5,11 +5,13 @@ import { FileJson, Plus, Database } from 'lucide-react'
 import { toast } from 'sonner'
 import { ImportActionCard } from '@/components/import/ImportActionCard'
 import { ComponentsJsonUploadModal } from '@/components/import/ComponentsJsonUploadModal'
+import { ComponentManualEntryModal } from '@/components/import/ComponentManualEntryModal'
 import { loadSampleData } from '@/lib/sampleData'
 
 export function ComponentsTabContent() {
   const [isLoadingSamples, setIsLoadingSamples] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [showManualEntryModal, setShowManualEntryModal] = useState(false)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -18,7 +20,7 @@ export function ComponentsTabContent() {
   }
 
   const handleAddManually = () => {
-    toast('Manual entry wizard coming in Story 2.6')
+    setShowManualEntryModal(true)
   }
 
   const handleLoadSamples = async () => {
@@ -65,6 +67,11 @@ export function ComponentsTabContent() {
       <ComponentsJsonUploadModal
         open={showUploadModal}
         onOpenChange={setShowUploadModal}
+      />
+
+      <ComponentManualEntryModal
+        open={showManualEntryModal}
+        onOpenChange={setShowManualEntryModal}
       />
     </>
   )

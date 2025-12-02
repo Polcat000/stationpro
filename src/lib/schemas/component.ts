@@ -258,3 +258,175 @@ export const componentsImportSchema = z.object({
 })
 
 export type ComponentsImport = z.infer<typeof componentsImportSchema>
+
+// =============================================================================
+// Form Schemas (for React Hook Form)
+// =============================================================================
+// Per Story 2.5 learnings: Zod 4.0.17 + @hookform/resolvers requires form-specific
+// schemas without .default() values. Defaults are applied in handleSubmit.
+
+/**
+ * Component type options for the wizard selector
+ */
+export const componentTypeOptions = [
+  'LaserLineProfiler',
+  'LinescanCamera',
+  'AreascanCamera',
+  'Lens',
+  'SnapshotSensor',
+] as const
+
+export type ComponentTypeOption = (typeof componentTypeOptions)[number]
+
+/**
+ * Base component form schema - no defaults
+ */
+export const baseComponentFormSchema = z.object({
+  componentId: z.string().min(1, 'Component ID is required'),
+  Manufacturer: z.string().min(1, 'Manufacturer is required'),
+  Model: z.string().min(1, 'Model is required'),
+  PartNumber: z.string().optional(),
+})
+
+export type BaseComponentFormInput = z.infer<typeof baseComponentFormSchema>
+
+/**
+ * LaserLineProfiler form schema - no defaults
+ */
+export const laserProfilerFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('LaserLineProfiler'),
+  NearFieldLateralFOV_mm: z.number().positive('Near field FOV must be positive'),
+  MidFieldLateralFOV_mm: z.number().positive('Mid field FOV must be positive'),
+  FarFieldLateralFOV_mm: z.number().positive('Far field FOV must be positive'),
+  StandoffDistance_mm: z.number().positive('Standoff distance must be positive'),
+  MeasurementRange_mm: z.number().positive('Measurement range must be positive'),
+  PointsPerProfile: z.number().int().positive('Points per profile must be positive integer'),
+  LateralResolution_um: z.number().positive('Lateral resolution must be positive'),
+  VerticalResolution_um: z.number().positive('Vertical resolution must be positive'),
+  MaxScanRate_kHz: z.number().positive('Max scan rate must be positive'),
+})
+
+export type LaserProfilerFormInput = z.infer<typeof laserProfilerFormSchema>
+
+/**
+ * LinescanCamera form schema - no defaults (ResolutionVertical_px default applied in submit)
+ */
+export const linescanCameraFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('LinescanCamera'),
+  ResolutionHorizontal_px: z.number().int().positive('Horizontal resolution must be positive integer'),
+  PixelSizeHorizontal_um: z.number().positive('Horizontal pixel size must be positive'),
+  PixelSizeVertical_um: z.number().positive('Vertical pixel size must be positive'),
+  LineRate_kHz: z.number().positive('Line rate must be positive'),
+  LensMount: z.string().min(1, 'Lens mount is required'),
+})
+
+export type LinescanCameraFormInput = z.infer<typeof linescanCameraFormSchema>
+
+/**
+ * AreascanCamera form schema - no defaults
+ */
+export const areascanCameraFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('AreascanCamera'),
+  ResolutionHorizontal_px: z.number().int().positive('Horizontal resolution must be positive integer'),
+  ResolutionVertical_px: z.number().int().positive('Vertical resolution must be positive integer'),
+  PixelSizeHorizontal_um: z.number().positive('Horizontal pixel size must be positive'),
+  PixelSizeVertical_um: z.number().positive('Vertical pixel size must be positive'),
+  FrameRate_fps: z.number().positive('Frame rate must be positive'),
+  LensMount: z.string().min(1, 'Lens mount is required'),
+})
+
+export type AreascanCameraFormInput = z.infer<typeof areascanCameraFormSchema>
+
+/**
+ * Telecentric Lens form schema - no defaults
+ */
+export const telecentricLensFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('Lens'),
+  LensType: z.literal('Telecentric'),
+  Mount: z.string().min(1, 'Mount is required'),
+  MaxSensorSize_mm: z.number().positive('Max sensor size must be positive'),
+  ApertureMin_fnum: z.number().positive('Minimum aperture must be positive'),
+  ApertureMax_fnum: z.number().positive('Maximum aperture must be positive'),
+  Magnification: z.number().positive('Magnification must be positive'),
+  WorkingDistance_mm: z.number().positive('Working distance must be positive'),
+  FieldDepth_mm: z.number().positive('Field depth must be positive'),
+})
+
+export type TelecentricLensFormInput = z.infer<typeof telecentricLensFormSchema>
+
+/**
+ * Fixed Focal Length Lens form schema - no defaults
+ */
+export const fixedFocalLengthLensFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('Lens'),
+  LensType: z.literal('FixedFocalLength'),
+  Mount: z.string().min(1, 'Mount is required'),
+  MaxSensorSize_mm: z.number().positive('Max sensor size must be positive'),
+  ApertureMin_fnum: z.number().positive('Minimum aperture must be positive'),
+  ApertureMax_fnum: z.number().positive('Maximum aperture must be positive'),
+  FocalLength_mm: z.number().positive('Focal length must be positive'),
+  WorkingDistanceMin_mm: z.number().positive('Minimum working distance must be positive'),
+})
+
+export type FixedFocalLengthLensFormInput = z.infer<typeof fixedFocalLengthLensFormSchema>
+
+/**
+ * Combined Lens form schema - discriminated union on LensType
+ */
+export const lensFormSchema = z.discriminatedUnion('LensType', [
+  telecentricLensFormSchema,
+  fixedFocalLengthLensFormSchema,
+])
+
+export type LensFormInput = z.infer<typeof lensFormSchema>
+
+/**
+ * SnapshotSensor form schema - no defaults
+ */
+export const snapshotSensorFormSchema = baseComponentFormSchema.extend({
+  componentType: z.literal('SnapshotSensor'),
+  FOV_X_mm: z.number().positive('FOV X must be positive'),
+  FOV_Y_mm: z.number().positive('FOV Y must be positive'),
+  MeasurementRange_mm: z.number().positive('Measurement range must be positive'),
+  WorkingDistance_mm: z.number().positive('Working distance must be positive'),
+  XYDataInterval_um: z.number().positive('XY data interval must be positive'),
+})
+
+export type SnapshotSensorFormInput = z.infer<typeof snapshotSensorFormSchema>
+
+/**
+ * Combined component form schema - all types
+ * Uses z.union() because we need to handle Lens types with nested LensType discrimination
+ */
+export const componentFormSchema = z.union([
+  laserProfilerFormSchema,
+  linescanCameraFormSchema,
+  areascanCameraFormSchema,
+  lensFormSchema,
+  snapshotSensorFormSchema,
+])
+
+export type ComponentFormInput = z.infer<typeof componentFormSchema>
+
+/**
+ * Get the appropriate form schema based on component type and lens type
+ */
+export function getComponentFormSchema(
+  componentType: ComponentTypeOption,
+  lensType?: LensType
+): z.ZodSchema {
+  switch (componentType) {
+    case 'LaserLineProfiler':
+      return laserProfilerFormSchema
+    case 'LinescanCamera':
+      return linescanCameraFormSchema
+    case 'AreascanCamera':
+      return areascanCameraFormSchema
+    case 'Lens':
+      return lensType === 'Telecentric'
+        ? telecentricLensFormSchema
+        : fixedFocalLengthLensFormSchema
+    case 'SnapshotSensor':
+      return snapshotSensorFormSchema
+  }
+}

@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { PartsLibraryPage } from '@/components/parts'
 
 export const Route = createFileRoute('/parts')({
-  component: PartsScreen,
+  component: PartsLibraryPage,
 })
-
-function PartsScreen() {
-  return <div className="p-4">Screen: Parts</div>
-}

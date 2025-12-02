@@ -9,3 +9,4 @@ export { DuplicateDetectionDialog, type DuplicateAction } from './DuplicateDetec
 export { PartsJsonUploadModal } from './PartsJsonUploadModal'
 export { PartManualEntryModal } from './PartManualEntryModal'
 export { ComponentsJsonUploadModal } from './ComponentsJsonUploadModal'
+export { ComponentManualEntryModal } from './ComponentManualEntryModal'
