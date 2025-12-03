@@ -6,6 +6,16 @@
 // This adds matchers like: toBeInTheDocument(), toHaveTextContent(), etc.
 import '@testing-library/jest-dom'
 
+// Mock navigator.clipboard for jsdom (not available by default)
+// Using plain functions - tests can spy on these if they need to assert calls
+Object.defineProperty(navigator, 'clipboard', {
+  value: {
+    writeText: () => Promise.resolve(),
+    readText: () => Promise.resolve(''),
+  },
+  configurable: true,
+})
+
 // Mock pointer capture methods for radix-ui Select components in jsdom
 // These methods don't exist in jsdom but are used by radix-ui
 if (typeof Element.prototype.hasPointerCapture !== 'function') {

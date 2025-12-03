@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { FileJson, Plus, Database } from 'lucide-react'
+import { FileJson, Plus, Database, HelpCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { ImportActionCard } from '@/components/import/ImportActionCard'
 import { PartsJsonUploadModal } from '@/components/import/PartsJsonUploadModal'
 import { PartManualEntryModal } from '@/components/import/PartManualEntryModal'
+import { SchemaHelpModal } from '@/components/import/SchemaHelpModal'
 import { loadSampleData } from '@/lib/sampleData'
 
 export function PartsTabContent() {
   const [isLoadingSamples, setIsLoadingSamples] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isManualEntryOpen, setIsManualEntryOpen] = useState(false)
+  const [isSchemaHelpOpen, setIsSchemaHelpOpen] = useState(false)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -50,6 +53,17 @@ export function PartsTabContent() {
   return (
     <>
       <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSchemaHelpOpen(true)}
+            className="text-muted-foreground"
+          >
+            <HelpCircle className="mr-1 size-4" />
+            View Schema
+          </Button>
+        </div>
         <ImportActionCard
           icon={<FileJson className="size-5" />}
           title="Upload JSON File"
@@ -82,6 +96,11 @@ export function PartsTabContent() {
         open={isManualEntryOpen}
         onOpenChange={setIsManualEntryOpen}
         onSuccess={handleManualEntrySuccess}
+      />
+
+      <SchemaHelpModal
+        open={isSchemaHelpOpen}
+        onOpenChange={setIsSchemaHelpOpen}
       />
     </>
   )

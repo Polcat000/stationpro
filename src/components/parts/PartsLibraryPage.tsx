@@ -251,7 +251,9 @@ export function PartsLibraryPage() {
   return (
     <div className="flex h-full flex-col gap-4 p-4">
       {/* Page Title */}
-      <h1 className="text-2xl font-semibold">Parts Library</h1>
+      <h1 className="text-2xl font-semibold">
+        {activeTab === 'parts' ? 'Parts Library' : 'Parts Analysis'}
+      </h1>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
         <TabsList className="w-fit">

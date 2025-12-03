@@ -240,8 +240,7 @@ export function ComponentsTab() {
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Components Library</h2>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <ComponentsFilterChip
             activeCount={activeFilterCount}

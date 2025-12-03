@@ -30,8 +30,17 @@ export function StationsPage() {
     sessionStorage.setItem(TAB_SESSION_KEY, tabValue)
   }
 
+  const titleMap: Record<TabValue, string> = {
+    stations: 'Stations',
+    components: 'Component Library',
+    analysis: 'Component Analysis',
+  }
+
   return (
     <div className="flex h-full flex-col gap-4 p-4">
+      {/* Page Title */}
+      <h1 className="text-2xl font-semibold">{titleMap[activeTab]}</h1>
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
         <TabsList className="w-fit">
           <TabsTrigger value="stations" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
