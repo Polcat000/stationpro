@@ -15,7 +15,7 @@ function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <TopNav />
-      <main className="container mx-auto py-6">
+      <main className="container mx-auto h-[calc(100vh-4rem)] overflow-hidden py-6">
         <Outlet />
       </main>
       <Toaster position="bottom-right" />

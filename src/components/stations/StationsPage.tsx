@@ -37,32 +37,33 @@ export function StationsPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      {/* Page Title */}
-      <h1 className="text-2xl font-semibold">{titleMap[activeTab]}</h1>
-
+    <div className="flex h-full flex-col p-4">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-        <TabsList className="w-fit">
-          <TabsTrigger value="stations" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Stations
-          </TabsTrigger>
-          <TabsTrigger value="components" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Components
-          </TabsTrigger>
-          <TabsTrigger value="analysis" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Analysis
-          </TabsTrigger>
-        </TabsList>
+        {/* Sticky header zone - title + tab selector */}
+        <div className="sticky top-0 z-10 bg-background pb-4">
+          <h1 className="mb-4 text-2xl font-semibold">{titleMap[activeTab]}</h1>
+          <TabsList className="w-fit">
+            <TabsTrigger value="stations" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Stations
+            </TabsTrigger>
+            <TabsTrigger value="components" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Components
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Analysis
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="stations" className="flex-1">
+        <TabsContent value="stations" className="flex-1 overflow-auto">
           <StationsTab />
         </TabsContent>
 
-        <TabsContent value="components" className="flex-1">
+        <TabsContent value="components" className="flex-1 overflow-auto">
           <ComponentsTab />
         </TabsContent>
 
-        <TabsContent value="analysis" className="flex-1">
+        <TabsContent value="analysis" className="flex-1 overflow-auto">
           <AnalysisTab />
         </TabsContent>
       </Tabs>

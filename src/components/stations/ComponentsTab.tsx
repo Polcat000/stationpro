@@ -253,8 +253,8 @@ export function ComponentsTab() {
         </div>
       </div>
 
-      {/* Data Grid */}
-      <div className="flex-1 overflow-auto">
+      {/* Data Grid - Table component handles its own scrolling */}
+      <div className="min-h-0 flex-1">
         <ComponentsDataGrid table={table} onRowClick={handleRowClick} />
       </div>
 

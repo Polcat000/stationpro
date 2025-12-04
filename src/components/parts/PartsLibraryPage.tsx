@@ -249,23 +249,24 @@ export function PartsLibraryPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      {/* Page Title */}
-      <h1 className="text-2xl font-semibold">
-        {activeTab === 'parts' ? 'Parts Library' : 'Parts Analysis'}
-      </h1>
-
+    <div className="flex h-full flex-col p-4">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-        <TabsList className="w-fit">
-          <TabsTrigger value="parts" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Parts
-          </TabsTrigger>
-          <TabsTrigger value="analysis" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Analysis
-          </TabsTrigger>
-        </TabsList>
+        {/* Sticky header zone - title + tab selector */}
+        <div className="sticky top-0 z-10 bg-background pb-4">
+          <h1 className="mb-4 text-2xl font-semibold">
+            {activeTab === 'parts' ? 'Parts Library' : 'Parts Analysis'}
+          </h1>
+          <TabsList className="w-fit">
+            <TabsTrigger value="parts" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Parts
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Analysis
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="parts" className="flex flex-1 flex-col gap-4">
+        <TabsContent value="parts" className="flex flex-1 flex-col gap-4 overflow-hidden">
           {/* Toolbar */}
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-2">
@@ -280,8 +281,8 @@ export function PartsLibraryPage() {
             </div>
           </div>
 
-          {/* Data Grid */}
-          <div className="flex-1 overflow-auto">
+          {/* Data Grid - Table component handles its own scrolling */}
+          <div className="min-h-0 flex-1">
             <PartsDataGrid table={table} onRowClick={handleRowClick} />
           </div>
 
