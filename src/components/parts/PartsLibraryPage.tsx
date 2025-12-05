@@ -9,9 +9,13 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getGroupedRowModel,
+  getExpandedRowModel,
   type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
+  type GroupingState,
+  type ExpandedState,
 } from '@tanstack/react-table'
 import { partsQueryOptions } from '@/lib/queries/parts'
 import { partsRepository } from '@/lib/repositories/partsRepository'
@@ -28,6 +32,9 @@ import { ColumnConfigDropdown } from './ColumnConfigDropdown'
 import { PartDetailPanel } from './PartDetailPanel'
 import { DeletePartDialog } from './DeletePartDialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { WorkingSetCounter } from './WorkingSetCounter'
+import { Button } from '@/components/ui/button'
+import { useWorkingSetStore } from '@/stores/workingSet'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
 const TAB_SESSION_KEY = 'stationpro-parts-tab'
@@ -74,6 +81,15 @@ function countActiveFilters(filters: PartFilters): number {
 export function PartsLibraryPage() {
   const queryClient = useQueryClient()
   const { data: parts = [], isLoading } = useQuery(partsQueryOptions)
+  const { partIds, addAllFiltered, clearParts, cleanupStalePartIds } = useWorkingSetStore()
+
+  // Cleanup stale part IDs when parts data loads (AC 3.1.8)
+  useEffect(() => {
+    if (parts.length > 0) {
+      const validPartIds = parts.map((p) => p.PartCallout)
+      cleanupStalePartIds(validPartIds)
+    }
+  }, [parts, cleanupStalePartIds])
 
   // Tab State
   const [activeTab, setActiveTab] = useState<TabValue>(getInitialTab)
@@ -98,6 +114,8 @@ export function PartsLibraryPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [grouping, setGrouping] = useState<GroupingState>(['PartSeries'])
+  const [expanded, setExpanded] = useState<ExpandedState>(true)
 
   // Load column visibility from localStorage
   useEffect(() => {
@@ -161,14 +179,20 @@ export function PartsLibraryPage() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getGroupedRowModel: getGroupedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      grouping,
+      expanded,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onGroupingChange: setGrouping,
+    onExpandedChange: setExpanded,
   })
 
   // Delete mutation
@@ -229,6 +253,15 @@ export function PartsLibraryPage() {
     setFilterPanelOpen(false)
   }
 
+  const handleSelectAllFiltered = () => {
+    const filteredPartIds = table.getFilteredRowModel().rows.map((row) => row.original.PartCallout)
+    addAllFiltered(filteredPartIds)
+  }
+
+  const handleClearWorkingSet = () => {
+    clearParts()
+  }
+
   const activeFilterCount = countActiveFilters(filters)
 
   if (isLoading) {
@@ -268,7 +301,27 @@ export function PartsLibraryPage() {
 
         <TabsContent value="parts" className="flex flex-1 flex-col gap-4 overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <WorkingSetCounter />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAllFiltered}
+                >
+                  Select All Filtered
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearWorkingSet}
+                  disabled={partIds.size === 0}
+                >
+                  Clear Working Set
+                </Button>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <FilterChip
                 activeCount={activeFilterCount}

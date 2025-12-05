@@ -6,9 +6,12 @@ export interface WorkingSetState {
   stationIds: Set<string>
   togglePart: (id: string) => void
   toggleStation: (id: string) => void
+  toggleSeries: (seriesName: string, partIdsInSeries: string[]) => void
+  addAllFiltered: (partIds: string[]) => void
   clearParts: () => void
   clearStations: () => void
   clearAll: () => void
+  cleanupStalePartIds: (validPartIds: string[]) => void
 }
 
 // Custom storage that handles Set<string> serialization
@@ -55,6 +58,29 @@ export const useWorkingSetStore = create<WorkingSetState>()(
           return { stationIds: newStationIds }
         }),
 
+      toggleSeries: (_seriesName: string, partIdsInSeries: string[]) =>
+        set((state) => {
+          const allInSet = partIdsInSeries.every((id) => state.partIds.has(id))
+          const newPartIds = new Set(state.partIds)
+
+          if (allInSet) {
+            // All selected → remove all
+            partIdsInSeries.forEach((id) => newPartIds.delete(id))
+          } else {
+            // Some or none selected → add all
+            partIdsInSeries.forEach((id) => newPartIds.add(id))
+          }
+
+          return { partIds: newPartIds }
+        }),
+
+      addAllFiltered: (partIds: string[]) =>
+        set((state) => {
+          const newPartIds = new Set(state.partIds)
+          partIds.forEach((id) => newPartIds.add(id))
+          return { partIds: newPartIds }
+        }),
+
       clearParts: () => set({ partIds: new Set<string>() }),
 
       clearStations: () => set({ stationIds: new Set<string>() }),
@@ -63,6 +89,18 @@ export const useWorkingSetStore = create<WorkingSetState>()(
         set({
           partIds: new Set<string>(),
           stationIds: new Set<string>(),
+        }),
+
+      cleanupStalePartIds: (validPartIds: string[]) =>
+        set((state) => {
+          const validSet = new Set(validPartIds)
+          const newPartIds = new Set<string>()
+          state.partIds.forEach((id) => {
+            if (validSet.has(id)) {
+              newPartIds.add(id)
+            }
+          })
+          return { partIds: newPartIds }
         }),
     }),
     {

@@ -7,6 +7,7 @@ import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import type { Part } from '@/lib/schemas/part'
 import { Switch } from '@/components/ui/switch'
+import { useWorkingSetStore } from '@/stores/workingSet'
 
 // Custom filter functions - defined here to ensure proper typing with ColumnDef
 const textContainsFilter: FilterFn<Part> = (row, columnId, filterValue: string) => {
@@ -57,8 +58,13 @@ interface ActiveToggleProps {
 }
 
 function ActiveToggle({ part }: ActiveToggleProps) {
+  const { partIds, togglePart } = useWorkingSetStore()
+  const isActive = partIds.has(part.PartCallout)
+
   return (
     <Switch
+      checked={isActive}
+      onCheckedChange={() => togglePart(part.PartCallout)}
       aria-label={`Toggle ${part.PartCallout} active state`}
       onClick={(e) => e.stopPropagation()}
     />

@@ -113,7 +113,7 @@ describe('Stations Library Page', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: 'Components' })).toHaveAttribute('data-state', 'active')
-        expect(screen.getByText('Components Library')).toBeInTheDocument()
+        expect(screen.getByText('Component Library')).toBeInTheDocument()
       })
     })
 
