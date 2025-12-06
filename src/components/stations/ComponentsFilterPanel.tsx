@@ -186,7 +186,7 @@ export function ComponentsFilterPanel({
 
         <SheetFooter className="mt-6">
           <Button variant="outline" onClick={onClearAll}>
-            Clear All
+            Clear All Filters
           </Button>
           <Button onClick={() => onOpenChange(false)}>Apply</Button>
         </SheetFooter>

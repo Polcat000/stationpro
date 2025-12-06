@@ -92,4 +92,179 @@ describe('componentsStore', () => {
       expect(activeComponentIds.size).toBe(0)
     })
   })
+
+  describe('toggleByManufacturer', () => {
+    it('adds all components when none are active', () => {
+      const { toggleByManufacturer } = useComponentsStore.getState()
+
+      toggleByManufacturer('LMI Technologies', ['c1', 'c2', 'c3'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('c1')).toBe(true)
+      expect(activeComponentIds.has('c2')).toBe(true)
+      expect(activeComponentIds.has('c3')).toBe(true)
+      expect(activeComponentIds.size).toBe(3)
+    })
+
+    it('removes all components when all are active', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['c1', 'c2', 'c3']),
+      })
+
+      const { toggleByManufacturer } = useComponentsStore.getState()
+      toggleByManufacturer('LMI Technologies', ['c1', 'c2', 'c3'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.size).toBe(0)
+    })
+
+    it('adds all components when some are active (OR logic)', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['c1']),
+      })
+
+      const { toggleByManufacturer } = useComponentsStore.getState()
+      toggleByManufacturer('LMI Technologies', ['c1', 'c2', 'c3'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('c1')).toBe(true)
+      expect(activeComponentIds.has('c2')).toBe(true)
+      expect(activeComponentIds.has('c3')).toBe(true)
+      expect(activeComponentIds.size).toBe(3)
+    })
+
+    it('preserves components from other manufacturers', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['other-1', 'other-2']),
+      })
+
+      const { toggleByManufacturer } = useComponentsStore.getState()
+      toggleByManufacturer('LMI Technologies', ['c1', 'c2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('other-1')).toBe(true)
+      expect(activeComponentIds.has('other-2')).toBe(true)
+      expect(activeComponentIds.has('c1')).toBe(true)
+      expect(activeComponentIds.has('c2')).toBe(true)
+      expect(activeComponentIds.size).toBe(4)
+    })
+  })
+
+  describe('activateByType', () => {
+    it('adds components without removing others (additive)', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['existing-1']),
+      })
+
+      const { activateByType } = useComponentsStore.getState()
+      activateByType('LaserLineProfiler', ['llp-1', 'llp-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('existing-1')).toBe(true)
+      expect(activeComponentIds.has('llp-1')).toBe(true)
+      expect(activeComponentIds.has('llp-2')).toBe(true)
+      expect(activeComponentIds.size).toBe(3)
+    })
+
+    it('does not duplicate already active components', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['llp-1']),
+      })
+
+      const { activateByType } = useComponentsStore.getState()
+      activateByType('LaserLineProfiler', ['llp-1', 'llp-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.size).toBe(2)
+    })
+  })
+
+  describe('deactivateByType', () => {
+    it('removes all components of specified type', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['llp-1', 'llp-2', 'other-1']),
+      })
+
+      const { deactivateByType } = useComponentsStore.getState()
+      deactivateByType('LaserLineProfiler', ['llp-1', 'llp-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('llp-1')).toBe(false)
+      expect(activeComponentIds.has('llp-2')).toBe(false)
+      expect(activeComponentIds.has('other-1')).toBe(true)
+      expect(activeComponentIds.size).toBe(1)
+    })
+
+    it('does nothing for components not in active set', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['other-1']),
+      })
+
+      const { deactivateByType } = useComponentsStore.getState()
+      deactivateByType('LaserLineProfiler', ['llp-1', 'llp-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('other-1')).toBe(true)
+      expect(activeComponentIds.size).toBe(1)
+    })
+  })
+
+  describe('addAllFiltered', () => {
+    it('adds all provided IDs to active set (additive)', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['existing-1']),
+      })
+
+      const { addAllFiltered } = useComponentsStore.getState()
+      addAllFiltered(['filtered-1', 'filtered-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('existing-1')).toBe(true)
+      expect(activeComponentIds.has('filtered-1')).toBe(true)
+      expect(activeComponentIds.has('filtered-2')).toBe(true)
+      expect(activeComponentIds.size).toBe(3)
+    })
+  })
+
+  describe('cleanupStaleComponentIds', () => {
+    it('removes IDs not in valid set', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['valid-1', 'stale-1', 'valid-2', 'stale-2']),
+      })
+
+      const { cleanupStaleComponentIds } = useComponentsStore.getState()
+      cleanupStaleComponentIds(['valid-1', 'valid-2', 'valid-3'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.has('valid-1')).toBe(true)
+      expect(activeComponentIds.has('valid-2')).toBe(true)
+      expect(activeComponentIds.has('stale-1')).toBe(false)
+      expect(activeComponentIds.has('stale-2')).toBe(false)
+      expect(activeComponentIds.size).toBe(2)
+    })
+
+    it('keeps all IDs when all are valid', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['c1', 'c2']),
+      })
+
+      const { cleanupStaleComponentIds } = useComponentsStore.getState()
+      cleanupStaleComponentIds(['c1', 'c2', 'c3'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.size).toBe(2)
+    })
+
+    it('empties set when no IDs are valid', () => {
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['stale-1', 'stale-2']),
+      })
+
+      const { cleanupStaleComponentIds } = useComponentsStore.getState()
+      cleanupStaleComponentIds(['valid-1', 'valid-2'])
+
+      const { activeComponentIds } = useComponentsStore.getState()
+      expect(activeComponentIds.size).toBe(0)
+    })
+  })
 })

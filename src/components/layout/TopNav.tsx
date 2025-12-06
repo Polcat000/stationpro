@@ -1,6 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { WorkingSetPopover } from '@/components/shared/WorkingSetPopover'
 
 interface NavItem {
   to: '/' | '/parts' | '/stations' | '/analysis' | '/visualizer'
@@ -65,8 +66,8 @@ export function TopNav() {
           ))}
         </div>
 
-        {/* Right section placeholder for future settings */}
-        <div className="w-7" aria-hidden="true" />
+        {/* Working Set Summary - hidden on home page */}
+        {currentPath !== '/' ? <WorkingSetPopover /> : <div className="w-7" aria-hidden="true" />}
       </nav>
     </header>
   )

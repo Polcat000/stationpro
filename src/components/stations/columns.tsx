@@ -8,6 +8,7 @@ import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import type { Component } from '@/lib/schemas/component'
 import { Switch } from '@/components/ui/switch'
 import { componentFieldLabels } from '@/lib/componentFieldLabels'
+import { useComponentsStore } from '@/stores/components'
 
 // Type label mapping (AC 2.8.2)
 export const typeLabels: Record<string, string> = {
@@ -59,8 +60,13 @@ interface ActiveToggleProps {
 }
 
 function ActiveToggle({ component }: ActiveToggleProps) {
+  const { activeComponentIds, toggleComponent } = useComponentsStore()
+  const isActive = activeComponentIds.has(component.componentId)
+
   return (
     <Switch
+      checked={isActive}
+      onCheckedChange={() => toggleComponent(component.componentId)}
       aria-label={`Toggle ${component.Manufacturer} ${component.Model} active state`}
       onClick={(e) => e.stopPropagation()}
     />
@@ -75,10 +81,13 @@ const baseColumns: ColumnDef<Component>[] = [
   {
     accessorKey: 'Manufacturer',
     header: ({ column }) => (
-      <SortableHeader column={column} label="Manufacturer" />
+      <div className="min-w-[300px] pl-14">
+        <SortableHeader column={column} label="Manufacturer" />
+      </div>
     ),
     filterFn: multiSelectFilter,
     enableHiding: false,
+    cell: ({ row }) => <span className="inline-block min-w-[300px] pl-14">{row.getValue('Manufacturer') || '-'}</span>,
   },
   {
     accessorKey: 'Model',

@@ -95,7 +95,7 @@ describe('ComponentsFilterPanel', () => {
         />
       )
 
-      expect(screen.getByRole('button', { name: 'Clear All' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clear All Filters' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
     })
   })
@@ -145,7 +145,7 @@ describe('ComponentsFilterPanel', () => {
         />
       )
 
-      await user.click(screen.getByRole('button', { name: 'Clear All' }))
+      await user.click(screen.getByRole('button', { name: 'Clear All Filters' }))
 
       expect(onClearAll).toHaveBeenCalled()
     })

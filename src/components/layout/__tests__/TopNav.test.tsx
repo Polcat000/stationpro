@@ -1,6 +1,65 @@
-import { describe, it, expect } from 'vitest'
-import { renderWithRouter, screen } from '@/test/router-utils'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { renderWithRouter, screen, waitFor } from '@/test/router-utils'
+import userEvent from '@testing-library/user-event'
 import { TopNav } from '../TopNav'
+import { useWorkingSetStore } from '@/stores/workingSet'
+import { useComponentsStore } from '@/stores/components'
+import type { Part } from '@/lib/schemas/part'
+import type { Component } from '@/lib/schemas/component'
+
+// Mock parts data
+const mockParts: Part[] = [
+  {
+    PartCallout: 'PART-001',
+    PartWidth_mm: 100,
+    PartHeight_mm: 50,
+    PartLength_mm: 200,
+    SmallestLateralFeature_um: 10,
+    InspectionZones: [
+      {
+        ZoneID: 'Z1',
+        Name: 'Top',
+        Face: 'Top',
+        ZoneDepth_mm: 5,
+        ZoneOffset_mm: 0,
+        RequiredCoverage_pct: 100,
+        MinPixelsPerFeature: 3,
+      },
+    ],
+  },
+]
+
+// Mock components data
+const mockComponents: Component[] = [
+  {
+    componentId: 'laser-001',
+    componentType: 'LaserLineProfiler',
+    Manufacturer: 'Keyence',
+    Model: 'LJ-X8000',
+    NearFieldLateralFOV_mm: 10,
+    MidFieldLateralFOV_mm: 20,
+    FarFieldLateralFOV_mm: 30,
+    StandoffDistance_mm: 100,
+    MeasurementRange_mm: 50,
+    PointsPerProfile: 3200,
+    LateralResolution_um: 5,
+    VerticalResolution_um: 1,
+    MaxScanRate_kHz: 64,
+  },
+]
+
+// Mock repositories
+vi.mock('@/lib/repositories/partsRepository', () => ({
+  partsRepository: {
+    getAll: vi.fn(() => Promise.resolve(mockParts)),
+  },
+}))
+
+vi.mock('@/lib/repositories/componentsRepository', () => ({
+  componentsRepository: {
+    getAll: vi.fn(() => Promise.resolve(mockComponents)),
+  },
+}))
 
 describe('TopNav', () => {
   describe('AC-1.4.1: TopNav renders', () => {
@@ -162,6 +221,115 @@ describe('TopNav', () => {
       expect(partsLink).toHaveClass('inline-flex')
       expect(partsLink).toHaveClass('items-center')
       expect(partsLink).toHaveClass('justify-center')
+    })
+  })
+
+  describe('AC-3.3.1: Working Set Summary Integration', () => {
+    beforeEach(() => {
+      useWorkingSetStore.setState({
+        partIds: new Set<string>(),
+        stationIds: new Set<string>(),
+      })
+      useComponentsStore.setState({
+        activeComponentIds: new Set<string>(),
+      })
+    })
+
+    it('hides working set summary on home page', async () => {
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/' },
+      })
+
+      // Wait for nav to render
+      await screen.findByRole('navigation')
+
+      expect(screen.queryByRole('button', { name: /working set/i })).not.toBeInTheDocument()
+    })
+
+    it('summary visible on /parts route', async () => {
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/parts' },
+      })
+
+      expect(await screen.findByRole('button', { name: /working set/i })).toBeInTheDocument()
+    })
+
+    it('summary visible on /stations route', async () => {
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/stations' },
+      })
+
+      expect(await screen.findByRole('button', { name: /working set/i })).toBeInTheDocument()
+    })
+
+    it('summary visible on /import route', async () => {
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/import' },
+      })
+
+      expect(await screen.findByRole('button', { name: /working set/i })).toBeInTheDocument()
+    })
+
+    it('shows correct counts with selected parts and components', async () => {
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001']),
+        stationIds: new Set<string>(),
+      })
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['laser-001']),
+      })
+
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/parts' },
+      })
+
+      expect(await screen.findByRole('button')).toHaveTextContent('1 part, 1 component')
+    })
+
+    it('opens popover and shows parts list on click', async () => {
+      const user = userEvent.setup()
+
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001']),
+        stationIds: new Set<string>(),
+      })
+
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/parts' },
+      })
+
+      const trigger = await screen.findByRole('button', { name: /working set/i })
+      await user.click(trigger)
+
+      await waitFor(() => {
+        expect(screen.getByText('PART-001')).toBeInTheDocument()
+      })
+    })
+
+    it('clear action updates counts', async () => {
+      const user = userEvent.setup()
+
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001']),
+        stationIds: new Set<string>(),
+      })
+      useComponentsStore.setState({
+        activeComponentIds: new Set(['laser-001']),
+      })
+
+      renderWithRouter(<TopNav />, {
+        router: { initialPath: '/parts' },
+      })
+
+      const trigger = await screen.findByRole('button', { name: /working set/i })
+      await user.click(trigger)
+
+      const clearAllBtn = await screen.findByRole('button', { name: /clear all/i })
+      await user.click(clearAllBtn)
+
+      // Check that stores were cleared
+      expect(useWorkingSetStore.getState().partIds.size).toBe(0)
+      expect(useComponentsStore.getState().activeComponentIds.size).toBe(0)
     })
   })
 })

@@ -83,10 +83,12 @@ export const columns: ColumnDef<Part>[] = [
   {
     accessorKey: 'PartSeries',
     header: ({ column }) => (
-      <SortableHeader column={column} label="Series" />
+      <div className="min-w-[300px] pl-14">
+        <SortableHeader column={column} label="Series" />
+      </div>
     ),
     filterFn: multiSelectFilter,
-    cell: ({ row }) => row.getValue('PartSeries') || '-',
+    cell: ({ row }) => <span className="inline-block min-w-[300px] pl-14">{row.getValue('PartSeries') || '-'}</span>,
   },
   {
     accessorKey: 'PartWidth_mm',

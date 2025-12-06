@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { columns } from './columns'
+import { ManufacturerGroupHeader } from './ManufacturerGroupHeader'
 
 export interface ComponentsDataGridProps {
   table: TanStackTable<Component>
@@ -55,20 +56,45 @@ export function ComponentsDataGrid({ table, onRowClick }: ComponentsDataGridProp
             </TableCell>
           </TableRow>
         ) : (
-          rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className={cn('cursor-pointer')}
-              onClick={() => onRowClick(row.original)}
-              data-state={row.getIsSelected() ? 'selected' : undefined}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
+          rows.map((row) => {
+            // Check if this is a grouped row (manufacturer header)
+            if (row.getIsGrouped()) {
+              const manufacturer = row.getValue('Manufacturer') as string
+              const leafRows = row.getLeafRows()
+              const componentIdsInGroup = leafRows.map((r) => r.original.componentId)
+
+              return (
+                <TableRow key={row.id} className="bg-muted/50 hover:bg-muted">
+                  <TableCell colSpan={columns.length}>
+                    <ManufacturerGroupHeader
+                      manufacturer={manufacturer}
+                      componentIdsInGroup={componentIdsInGroup}
+                      isExpanded={row.getIsExpanded()}
+                      onToggleExpand={() => row.toggleExpanded()}
+                    />
+                  </TableCell>
+                </TableRow>
+              )
+            }
+
+            // Regular data row
+            return (
+              <TableRow
+                key={row.id}
+                className={cn('cursor-pointer')}
+                onClick={() => onRowClick(row.original)}
+                data-state={row.getIsSelected() ? 'selected' : undefined}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {cell.getIsGrouped() ? null : (
+                      flexRender(cell.column.columnDef.cell, cell.getContext())
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            )
+          })
         )}
       </TableBody>
     </Table>

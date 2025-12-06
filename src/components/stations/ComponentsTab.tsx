@@ -9,9 +9,13 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getGroupedRowModel,
+  getExpandedRowModel,
   type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
+  type GroupingState,
+  type ExpandedState,
 } from '@tanstack/react-table'
 import { componentsQueryOptions } from '@/lib/queries/components'
 import { componentsRepository } from '@/lib/repositories/componentsRepository'
@@ -27,6 +31,10 @@ import { ComponentsColumnConfigDropdown } from './ComponentsColumnConfigDropdown
 import { ComponentDetailPanel } from './ComponentDetailPanel'
 import { DeleteComponentDialog } from './DeleteComponentDialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { ActiveComponentsCounter } from './ActiveComponentsCounter'
+import { SelectByTypeDropdown } from './SelectByTypeDropdown'
+import { useComponentsStore } from '@/stores/components'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-components-columns'
 
@@ -67,6 +75,7 @@ function countActiveFilters(filters: ComponentFilters): number {
 export function ComponentsTab() {
   const queryClient = useQueryClient()
   const { data: components = [], isLoading } = useQuery(componentsQueryOptions)
+  const { activeComponentIds, addAllFiltered, clearActiveComponents, cleanupStaleComponentIds } = useComponentsStore()
 
   // UI State
   const [filterPanelOpen, setFilterPanelOpen] = useState(false)
@@ -84,6 +93,8 @@ export function ComponentsTab() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     getDefaultColumnVisibility
   )
+  const [grouping, setGrouping] = useState<GroupingState>(['Manufacturer'])
+  const [expanded, setExpanded] = useState<ExpandedState>(true)
 
   // Load column visibility from localStorage (merges with defaults)
   useEffect(() => {
@@ -98,6 +109,14 @@ export function ComponentsTab() {
       }
     }
   }, [])
+
+  // Cleanup stale component IDs when components data loads (AC 3.2.4)
+  useEffect(() => {
+    if (components.length > 0) {
+      const validIds = components.map((c) => c.componentId)
+      cleanupStaleComponentIds(validIds)
+    }
+  }, [components, cleanupStaleComponentIds])
 
   // Persist column visibility to localStorage
   useEffect(() => {
@@ -139,14 +158,20 @@ export function ComponentsTab() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getGroupedRowModel: getGroupedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      grouping,
+      expanded,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onGroupingChange: setGrouping,
+    onExpandedChange: setExpanded,
   })
 
   // Delete mutation
@@ -237,11 +262,40 @@ export function ComponentsTab() {
     )
   }
 
+  // Get filtered component IDs for "Select All Filtered" action
+  const filteredComponentIds = table.getFilteredRowModel().rows.map((row) => row.original.componentId)
+
+  const handleSelectAllFiltered = () => {
+    addAllFiltered(filteredComponentIds)
+  }
+
+  const handleClearAll = () => {
+    clearActiveComponents()
+  }
+
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <ActiveComponentsCounter />
         <div className="flex items-center gap-2">
+          <SelectByTypeDropdown components={components} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAllFiltered}
+            disabled={filteredComponentIds.length === 0}
+          >
+            Select All Filtered
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearAll}
+            disabled={activeComponentIds.size === 0}
+          >
+            Clear All
+          </Button>
           <ComponentsFilterChip
             activeCount={activeFilterCount}
             onClick={() => setFilterPanelOpen(true)}
