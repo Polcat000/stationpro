@@ -36,6 +36,7 @@ import { WorkingSetCounter } from './WorkingSetCounter'
 import { Button } from '@/components/ui/button'
 import { useWorkingSetStore } from '@/stores/workingSet'
 import { AggregateStatsPanel } from '@/components/analysis/AggregateStatsPanel'
+import { EnvelopePanel } from '@/components/analysis/EnvelopePanel'
 import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
@@ -390,8 +391,14 @@ export function PartsLibraryPage() {
             <BiasAlertBadge />
           </div>
 
-          {/* Aggregate Statistics Panel (AC 3.5.1, 3.5.3) */}
-          <AggregateStatsPanel />
+          {/* Analysis Panels Grid */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Aggregate Statistics Panel (AC 3.5.1, 3.5.3) */}
+            <AggregateStatsPanel />
+
+            {/* Worst-Case Envelope Panel (AC 3.6.1, 3.6.2, 3.6.3) */}
+            <EnvelopePanel />
+          </div>
 
           {/* Placeholder for future analysis panels */}
           <div className="flex-1" />
