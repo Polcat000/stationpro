@@ -2,6 +2,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { WorkingSetBadge } from './WorkingSetBadge'
+import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 import { useWorkingSetStore } from '@/stores/workingSet'
 import { useComponentsStore } from '@/stores/components'
 import { useQuery } from '@tanstack/react-query'
@@ -104,6 +105,13 @@ export function WorkingSetPopover() {
               items={activeComponentNames}
               isLoading={componentsLoading}
             />
+
+            {/* Bias Alert Section - AC 3.4.1, 3.4.2, 3.4.3 */}
+            {partsCount > 0 && (
+              <div className="pt-1">
+                <BiasAlertBadge />
+              </div>
+            )}
 
             <Separator />
 

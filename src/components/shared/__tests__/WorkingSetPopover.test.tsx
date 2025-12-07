@@ -437,4 +437,74 @@ describe('WorkingSetPopover', () => {
       expect(await screen.findByText('No items selected')).toBeInTheDocument()
     })
   })
+
+  describe('bias alerts (AC 3.4.1, 3.4.2, 3.4.4)', () => {
+    it('shows bias alert when parts have too-few-parts condition', async () => {
+      const user = userEvent.setup()
+
+      // Select only 2 parts
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001', 'PART-002']),
+        stationIds: new Set<string>(),
+      })
+
+      renderWithRouter(<WorkingSetPopover />)
+
+      const trigger = await screen.findByRole('button')
+      await user.click(trigger)
+
+      // Should show Small Sample bias alert
+      await waitFor(() => {
+        expect(screen.getByText('Small Sample')).toBeInTheDocument()
+      })
+    })
+
+    it('shows series bias alert when dominant series detected', async () => {
+      const user = userEvent.setup()
+
+      // Select 2 parts from same series (100% = series dominant)
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001', 'PART-002']),
+        stationIds: new Set<string>(),
+      })
+
+      renderWithRouter(<WorkingSetPopover />)
+
+      const trigger = await screen.findByRole('button')
+      await user.click(trigger)
+
+      // Both PART-001 and PART-002 don't have PartSeries, so defaults to "Unknown"
+      // which is 100% - series dominant
+      await waitFor(() => {
+        expect(screen.getByText('Series Bias')).toBeInTheDocument()
+      })
+    })
+
+    it('bias alerts are non-blocking - can still clear parts (AC 3.4.4)', async () => {
+      const user = userEvent.setup()
+
+      useWorkingSetStore.setState({
+        partIds: new Set(['PART-001', 'PART-002']),
+        stationIds: new Set<string>(),
+      })
+
+      renderWithRouter(<WorkingSetPopover />)
+
+      const trigger = await screen.findByRole('button')
+      await user.click(trigger)
+
+      // Verify bias alert is showing
+      await waitFor(() => {
+        expect(screen.getByText('Small Sample')).toBeInTheDocument()
+      })
+
+      // Can still click Clear Parts button
+      const clearPartsBtn = await screen.findByRole('button', { name: /clear parts/i })
+      expect(clearPartsBtn).not.toBeDisabled()
+      await user.click(clearPartsBtn)
+
+      // Parts should be cleared
+      expect(useWorkingSetStore.getState().partIds.size).toBe(0)
+    })
+  })
 })

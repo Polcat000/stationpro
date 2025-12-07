@@ -67,7 +67,7 @@ export function TopNav() {
         </div>
 
         {/* Working Set Summary - hidden on home page */}
-        {currentPath !== '/' ? <WorkingSetPopover /> : <div className="w-7" aria-hidden="true" />}
+        {currentPath !== '/' ? <WorkingSetPopover /> : <div className="w-[162px]" aria-hidden="true" />}
       </nav>
     </header>
   )
