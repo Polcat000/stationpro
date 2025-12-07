@@ -35,6 +35,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkingSetCounter } from './WorkingSetCounter'
 import { Button } from '@/components/ui/button'
 import { useWorkingSetStore } from '@/stores/workingSet'
+import { AggregateStatsPanel } from '@/components/analysis/AggregateStatsPanel'
+import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
 const TAB_SESSION_KEY = 'stationpro-parts-tab'
@@ -381,8 +383,18 @@ export function PartsLibraryPage() {
           />
         </TabsContent>
 
-        <TabsContent value="analysis" className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground">Parts analysis and metrics coming soon</p>
+        <TabsContent value="analysis" className="flex flex-1 flex-col gap-4 overflow-auto">
+          {/* Working set summary and bias alerts */}
+          <div className="flex items-center gap-4">
+            <WorkingSetCounter />
+            <BiasAlertBadge />
+          </div>
+
+          {/* Aggregate Statistics Panel (AC 3.5.1, 3.5.3) */}
+          <AggregateStatsPanel />
+
+          {/* Placeholder for future analysis panels */}
+          <div className="flex-1" />
         </TabsContent>
       </Tabs>
     </div>
