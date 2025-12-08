@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button'
 import { useWorkingSetStore } from '@/stores/workingSet'
 import { AggregateStatsPanel } from '@/components/analysis/AggregateStatsPanel'
 import { EnvelopePanel } from '@/components/analysis/EnvelopePanel'
+import { DistributionChartsPanel } from '@/components/analysis/DistributionChartsPanel'
 import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
@@ -400,8 +401,8 @@ export function PartsLibraryPage() {
             <EnvelopePanel />
           </div>
 
-          {/* Placeholder for future analysis panels */}
-          <div className="flex-1" />
+          {/* Dimensional Distribution Charts (AC 3.7.1, 3.7.2, 3.7.3) */}
+          <DistributionChartsPanel />
         </TabsContent>
       </Tabs>
     </div>
