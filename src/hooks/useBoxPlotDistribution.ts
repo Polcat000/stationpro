@@ -88,13 +88,16 @@ function getDimensionValue(part: Part, dimension: Dimension): number {
 /**
  * Transforms parts to Nivo BoxPlot datum format for a specific dimension.
  * Creates one datum per part with group = series name.
+ * Data is sorted by group name for consistent alphabetical ordering in chart.
  */
 function transformToNivoData(parts: Part[], dimension: Dimension): NivoBoxPlotDatum[] {
-  return parts.map((part) => ({
-    group: part.PartSeries || 'Uncategorized',
-    value: getDimensionValue(part, dimension),
-    partCallout: part.PartCallout,
-  }))
+  return parts
+    .map((part) => ({
+      group: part.PartSeries || 'Uncategorized',
+      value: getDimensionValue(part, dimension),
+      partCallout: part.PartCallout,
+    }))
+    .sort((a, b) => a.group.localeCompare(b.group))
 }
 
 /**

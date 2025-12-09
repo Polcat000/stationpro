@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BoxPlotChart } from '@/components/charts/BoxPlotChart'
 import { HistogramChart } from '@/components/charts/HistogramChart'
-import { SeriesLegend } from '@/components/charts/SeriesLegend'
 import { useBoxPlotDistribution } from '@/hooks/useBoxPlotDistribution'
 import { useHistogramDistribution } from '@/hooks/useHistogramDistribution'
 import type { Dimension } from '@/lib/analysis/boxPlotStats'
@@ -282,12 +281,6 @@ export function DistributionChartsContainer({
           </Badge>
         )}
       </div>
-
-      {/* Series legend */}
-      <SeriesLegend
-        seriesNames={boxPlotData.seriesNames}
-        showOutlierIndicator={totalOutliers > 0}
-      />
 
       {/* Drill-down hint */}
       <p className="text-xs text-muted-foreground">

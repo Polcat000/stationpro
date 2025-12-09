@@ -35,19 +35,24 @@ export interface BoxPlotChartProps {
 // =============================================================================
 
 /**
- * Series colors using CSS variables for theme compliance.
- * AC-3.7a.6: All colors use CSS variables.
+ * Color scale configuration for part-count-driven coloring.
+ * Uses OKLCH for perceptually uniform lightness interpolation.
+ * Lightness range: 0.75 (lightest, fewest parts) to 0.50 (darkest, most parts)
+ * Chroma and Hue match the theme's green palette (~144 hue).
  */
-const SERIES_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-]
+const COLOR_SCALE = {
+  /** Lightness for series with fewest parts (lighter = less data) */
+  lightnessMax: 0.65,
+  /** Lightness for series with most parts (darker = more data, but not too dark) */
+  lightnessMin: 0.50,
+  /** Chroma (saturation) - consistent across scale */
+  chroma: 0.15,
+  /** Hue - green from theme */
+  hue: 144,
+}
 
 /** Outlier color using destructive theme variable */
-const OUTLIER_COLOR = 'hsl(var(--destructive))'
+const OUTLIER_COLOR = 'var(--destructive)'
 
 /** Dimension labels for display */
 const DIMENSION_LABELS: Record<Dimension, string> = {
@@ -105,7 +110,7 @@ function OutlierLayer<RawDatum extends BoxPlotDatum>({
               cy={y}
               r={5}
               fill={OUTLIER_COLOR}
-              stroke="hsl(var(--background))"
+              stroke="var(--background)"
               strokeWidth={1.5}
               style={{ cursor: 'pointer' }}
               onMouseEnter={(e) => onOutlierHover?.(outlier, e)}
@@ -242,14 +247,32 @@ export function BoxPlotChart({
     return map
   }, [data.seriesStats])
 
-  // Build color map for series
+  // Build color map for series based on part count
+  // Darker = more parts (more statistical weight), Lighter = fewer parts
   const seriesColorMap = useMemo(() => {
     const map = new Map<string, string>()
-    data.seriesNames.forEach((name, index) => {
-      map.set(name, SERIES_COLORS[index % SERIES_COLORS.length])
+
+    // Get part counts per series
+    const partCounts = data.seriesStats.map((s) => s.n)
+    const minCount = Math.min(...partCounts)
+    const maxCount = Math.max(...partCounts)
+    const countRange = maxCount - minCount
+
+    data.seriesStats.forEach((stats) => {
+      // Normalize part count to 0-1 range (0 = fewest, 1 = most)
+      const normalized = countRange > 0
+        ? (stats.n - minCount) / countRange
+        : 0.5 // Single series or all equal counts
+
+      // Map to lightness: more parts = darker (lower lightness)
+      const lightness = COLOR_SCALE.lightnessMax -
+        (normalized * (COLOR_SCALE.lightnessMax - COLOR_SCALE.lightnessMin))
+
+      map.set(stats.seriesName, `oklch(${lightness} ${COLOR_SCALE.chroma} ${COLOR_SCALE.hue})`)
     })
+
     return map
-  }, [data.seriesNames])
+  }, [data.seriesStats])
 
   // Handle series click for drill-down
   const handleClick = useCallback(
@@ -312,12 +335,11 @@ export function BoxPlotChart({
       maxValue="auto"
       padding={0.3}
       innerPadding={0.1}
-      margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
-      colors={(datum) => seriesColorMap.get(datum.group) || SERIES_COLORS[0]}
+      margin={{ top: 20, right: 20, bottom: 60, left: 70 }}
+      colors={(datum) => seriesColorMap.get(datum.group) || `oklch(${COLOR_SCALE.lightnessMax} ${COLOR_SCALE.chroma} ${COLOR_SCALE.hue})`}
       colorBy="group"
       borderRadius={2}
-      borderWidth={1}
-      borderColor={{ from: 'color', modifiers: [['darker', 0.3]] }}
+      borderWidth={0}
       medianWidth={3}
       medianColor={{ from: 'color', modifiers: [['darker', 0.5]] }}
       whiskerWidth={2}
@@ -326,7 +348,7 @@ export function BoxPlotChart({
       axisBottom={{
         tickSize: 5,
         tickPadding: 5,
-        tickRotation: seriesCount > 5 ? -45 : 0,
+        tickRotation: 0,
         legend: 'Series',
         legendPosition: 'middle',
         legendOffset: 40,
@@ -351,20 +373,22 @@ export function BoxPlotChart({
         axis: {
           ticks: {
             text: {
-              fill: 'hsl(var(--muted-foreground))',
+              fill: 'var(--muted-foreground)',
               fontSize: 11,
+              fontWeight: 500,
             },
           },
           legend: {
             text: {
-              fill: 'hsl(var(--muted-foreground))',
+              fill: 'var(--muted-foreground)',
               fontSize: 12,
+              fontWeight: 600,
             },
           },
         },
         grid: {
           line: {
-            stroke: 'hsl(var(--border))',
+            stroke: 'var(--border)',
             strokeWidth: 1,
           },
         },

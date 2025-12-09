@@ -81,13 +81,13 @@ export interface HistogramChartProps {
  * Bar color using CSS variable for theme compliance.
  * AC-3.7a.6: All colors use CSS variables.
  */
-const BAR_COLOR = 'hsl(var(--chart-1))'
+const BAR_COLOR = 'var(--chart-2)'
 
 /**
  * Outlier bar color using destructive theme variable.
  * AC-3.7a.2: Outliers highlighted with destructive color.
  */
-const OUTLIER_COLOR = 'hsl(var(--destructive))'
+const OUTLIER_COLOR = 'var(--destructive)'
 
 /** Dimension labels for display */
 const DIMENSION_LABELS: Record<Dimension, string> = {
@@ -262,20 +262,19 @@ export function HistogramChart({
           data={chartData}
           keys={['count']}
           indexBy="binLabel"
-          margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+          margin={{ top: 20, right: 20, bottom: 60, left: 70 }}
           padding={0.1}
           valueScale={{ type: 'linear' }}
           indexScale={{ type: 'band', round: true }}
           colors={getBarColor}
           borderRadius={2}
-          borderWidth={1}
-          borderColor={{ from: 'color', modifiers: [['darker', 0.3]] }}
+          borderWidth={0}
           axisTop={null}
           axisRight={null}
           axisBottom={{
             tickSize: 5,
             tickPadding: 5,
-            tickRotation: data.length > 8 ? -45 : 0,
+            tickRotation: 0,
             legend: `${DIMENSION_LABELS[dimension]} (mm)`,
             legendPosition: 'middle',
             legendOffset: 40,
@@ -298,20 +297,22 @@ export function HistogramChart({
             axis: {
               ticks: {
                 text: {
-                  fill: 'hsl(var(--muted-foreground))',
+                  fill: 'var(--muted-foreground)',
                   fontSize: 11,
+                  fontWeight: 500,
                 },
               },
               legend: {
                 text: {
-                  fill: 'hsl(var(--muted-foreground))',
+                  fill: 'var(--muted-foreground)',
                   fontSize: 12,
+                  fontWeight: 600,
                 },
               },
             },
             grid: {
               line: {
-                stroke: 'hsl(var(--border))',
+                stroke: 'var(--border)',
                 strokeWidth: 1,
               },
             },
