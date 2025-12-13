@@ -38,6 +38,7 @@ import { useWorkingSetStore } from '@/stores/workingSet'
 import { AggregateStatsPanel } from '@/components/analysis/AggregateStatsPanel'
 import { EnvelopePanel } from '@/components/analysis/EnvelopePanel'
 import { DistributionChartsPanel } from '@/components/analysis/DistributionChartsPanel'
+import { ZoneAggregationPanel } from '@/components/analysis/ZoneAggregationPanel'
 import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
@@ -403,6 +404,9 @@ export function PartsLibraryPage() {
 
           {/* Dimensional Distribution Charts (AC 3.7.1, 3.7.2, 3.7.3) */}
           <DistributionChartsPanel />
+
+          {/* Inspection Zone Aggregation (AC 3.9.1-3.9.5) */}
+          <ZoneAggregationPanel />
         </TabsContent>
       </Tabs>
     </div>
