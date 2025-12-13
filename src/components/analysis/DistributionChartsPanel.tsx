@@ -8,6 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DistributionChartsContainer } from './DistributionChartsContainer'
 
 // =============================================================================
+// Content Component (for CollapsiblePanel wrapper)
+// =============================================================================
+
+/**
+ * Content-only component for use with CollapsiblePanel wrapper.
+ * Renders the distribution charts without Card wrapper.
+ */
+export function DistributionChartsPanelContent() {
+  return <DistributionChartsContainer />
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -36,7 +48,7 @@ export function DistributionChartsPanel() {
         <CardTitle>Dimensional Distribution</CardTitle>
       </CardHeader>
       <CardContent>
-        <DistributionChartsContainer />
+        <DistributionChartsPanelContent />
       </CardContent>
     </Card>
   )

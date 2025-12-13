@@ -151,6 +151,92 @@ function FaceMetrics({ face, parts }: FaceMetricsProps) {
 }
 
 // =============================================================================
+// Content Component (for CollapsiblePanel wrapper)
+// =============================================================================
+
+interface ZoneAggregationPanelContentInnerProps {
+  aggregation: ZoneAggregation | null
+  parts: Part[]
+  isLoading: boolean
+  isEmpty: boolean
+}
+
+/**
+ * Inner content component without Card wrapper.
+ * Supports face selection for detailed metrics.
+ */
+function ZoneAggregationPanelContentInner({
+  aggregation,
+  parts,
+  isLoading,
+  isEmpty,
+}: ZoneAggregationPanelContentInnerProps) {
+  const [selectedFace, setSelectedFace] = useState<InspectionFace | null>(null)
+
+  // Get faces that have zones
+  const availableFaces = useMemo(() => {
+    if (!aggregation) return []
+    return FACE_ORDER.filter(
+      (face) => aggregation.zonesByFace[face] !== undefined && aggregation.zonesByFace[face]! > 0
+    )
+  }, [aggregation])
+
+  // Loading state
+  if (isLoading) {
+    return <p className="text-muted-foreground">Loading...</p>
+  }
+
+  // Empty state (AC-3.9.5)
+  if (isEmpty || !aggregation) {
+    return <p className="text-muted-foreground">No inspection zones defined</p>
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Overall zone distribution - text summary (AC-3.9.1) */}
+      <div className="py-2 border-b">
+        <span className="font-medium block mb-1">Overall Zone Distribution</span>
+        <span className="text-sm text-muted-foreground">
+          {formatZoneCounts(aggregation.zonesByFace)}
+        </span>
+      </div>
+
+      {/* Face zone bar chart (AC-3.9.4) */}
+      <div className="py-2 border-b">
+        <FaceZoneChart data={aggregation.zonesByFace} height={180} />
+      </div>
+
+      {/* Face selector dropdown */}
+      <FaceSelector
+        availableFaces={availableFaces}
+        selectedFace={selectedFace}
+        onFaceChange={setSelectedFace}
+      />
+
+      {/* Face-specific metrics when a face is selected */}
+      {selectedFace && <FaceMetrics face={selectedFace} parts={parts} />}
+    </div>
+  )
+}
+
+/**
+ * Content-only component for use with CollapsiblePanel wrapper.
+ * Uses the useZoneAggregation hook internally.
+ */
+export function ZoneAggregationPanelContent() {
+  const { aggregation, parts, isLoading, isEmpty } = useZoneAggregation()
+
+  return (
+    <ZoneAggregationPanelContentInner
+      aggregation={aggregation}
+      parts={parts}
+      isLoading={isLoading}
+      isEmpty={isEmpty}
+    />
+  )
+}
+
+// =============================================================================
 // Standalone Component (for testing)
 // =============================================================================
 

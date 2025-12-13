@@ -65,6 +65,87 @@ function DimensionRow({ label, stats, unit }: DimensionRowProps) {
 }
 
 // =============================================================================
+// Content Component (for CollapsiblePanel wrapper)
+// =============================================================================
+
+interface AggregateStatsPanelContentInnerProps {
+  stats: AggregateStatistics | null
+  isLoading: boolean
+  isEmpty: boolean
+}
+
+/**
+ * Inner content component without Card wrapper.
+ * Used by both AggregateStatsPanelContent and AggregateStatsPanelStandalone.
+ */
+function AggregateStatsPanelContentInner({
+  stats,
+  isLoading,
+  isEmpty,
+}: AggregateStatsPanelContentInnerProps) {
+  // Loading state
+  if (isLoading) {
+    return <p className="text-muted-foreground">Loading...</p>
+  }
+
+  // Empty state (AC 3.5.4)
+  if (isEmpty || !stats) {
+    return (
+      <p className="text-muted-foreground">Select parts to view statistics</p>
+    )
+  }
+
+  // Statistics display (AC 3.5.1, 3.5.2)
+  return (
+    <div className="overflow-x-auto">
+      <table
+        className="w-full text-sm"
+        aria-label="Aggregate statistics for selected parts"
+      >
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="py-2 pr-4 text-left font-medium">Dimension</th>
+            <th className="py-2 px-2 text-right font-medium">Count</th>
+            <th className="py-2 px-2 text-right font-medium">Min</th>
+            <th className="py-2 px-2 text-right font-medium">Max</th>
+            <th className="py-2 px-2 text-right font-medium">Mean</th>
+            <th className="py-2 px-2 text-right font-medium">Median</th>
+            <th className="py-2 pl-2 text-right font-medium">Std Dev</th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* AC 3.5.2: All four dimensions */}
+          <DimensionRow label="Width" stats={stats.width} unit="mm" />
+          <DimensionRow label="Height" stats={stats.height} unit="mm" />
+          <DimensionRow label="Length" stats={stats.length} unit="mm" />
+          <DimensionRow
+            label="Smallest Feature"
+            stats={stats.smallestFeature}
+            unit="µm"
+          />
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/**
+ * Content-only component for use with CollapsiblePanel wrapper.
+ * Uses the useAggregateStats hook internally.
+ */
+export function AggregateStatsPanelContent() {
+  const { stats, isLoading, isEmpty } = useAggregateStats()
+
+  return (
+    <AggregateStatsPanelContentInner
+      stats={stats}
+      isLoading={isLoading}
+      isEmpty={isEmpty}
+    />
+  )
+}
+
+// =============================================================================
 // Standalone Component (for testing)
 // =============================================================================
 
@@ -82,72 +163,17 @@ export function AggregateStatsPanelStandalone({
   isLoading,
   isEmpty,
 }: AggregateStatsPanelStandaloneProps) {
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Aggregate Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Loading...</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Empty state (AC 3.5.4)
-  if (isEmpty || !stats) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Aggregate Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Select parts to view statistics
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Statistics display (AC 3.5.1, 3.5.2)
   return (
     <Card>
       <CardHeader>
         <CardTitle>Aggregate Statistics</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table
-            className="w-full text-sm"
-            aria-label="Aggregate statistics for selected parts"
-          >
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="py-2 pr-4 text-left font-medium">Dimension</th>
-                <th className="py-2 px-2 text-right font-medium">Count</th>
-                <th className="py-2 px-2 text-right font-medium">Min</th>
-                <th className="py-2 px-2 text-right font-medium">Max</th>
-                <th className="py-2 px-2 text-right font-medium">Mean</th>
-                <th className="py-2 px-2 text-right font-medium">Median</th>
-                <th className="py-2 pl-2 text-right font-medium">Std Dev</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* AC 3.5.2: All four dimensions */}
-              <DimensionRow label="Width" stats={stats.width} unit="mm" />
-              <DimensionRow label="Height" stats={stats.height} unit="mm" />
-              <DimensionRow label="Length" stats={stats.length} unit="mm" />
-              <DimensionRow
-                label="Smallest Feature"
-                stats={stats.smallestFeature}
-                unit="µm"
-              />
-            </tbody>
-          </table>
-        </div>
+        <AggregateStatsPanelContentInner
+          stats={stats}
+          isLoading={isLoading}
+          isEmpty={isEmpty}
+        />
       </CardContent>
     </Card>
   )
