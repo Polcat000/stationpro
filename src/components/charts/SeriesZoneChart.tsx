@@ -3,7 +3,7 @@
 
 import { useMemo, useCallback } from 'react'
 import { ResponsiveBar } from '@nivo/bar'
-import type { BarDatum, BarTooltipProps, ComputedDatum } from '@nivo/bar'
+import type { BarDatum, BarTooltipProps } from '@nivo/bar'
 import type { InspectionFace } from '@/types/domain'
 import { FACE_COLORS } from '@/lib/analysis/zoneAggregation'
 
@@ -74,7 +74,7 @@ export function SeriesZoneChart({ data, face, height = 200 }: SeriesZoneChartPro
 
   // Color function: all bars use face color
   const getBarColor = useCallback(
-    (_datum: ComputedDatum<NivoBarDatum>) => faceColor,
+    () => faceColor,
     [faceColor]
   )
 
