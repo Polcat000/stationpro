@@ -35,10 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkingSetCounter } from './WorkingSetCounter'
 import { Button } from '@/components/ui/button'
 import { useWorkingSetStore } from '@/stores/workingSet'
-import { AggregateStatsPanel } from '@/components/analysis/AggregateStatsPanel'
-import { EnvelopePanel } from '@/components/analysis/EnvelopePanel'
-import { DistributionChartsPanel } from '@/components/analysis/DistributionChartsPanel'
-import { ZoneAggregationPanel } from '@/components/analysis/ZoneAggregationPanel'
+import { AnalysisPanelGrid } from '@/components/analysis/AnalysisPanelGrid'
 import { BiasAlertBadge } from '@/components/analysis/BiasAlertBadge'
 
 const COLUMN_VISIBILITY_KEY = 'stationpro-parts-columns'
@@ -393,20 +390,8 @@ export function PartsLibraryPage() {
             <BiasAlertBadge />
           </div>
 
-          {/* Analysis Panels Grid */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Aggregate Statistics Panel (AC 3.5.1, 3.5.3) */}
-            <AggregateStatsPanel />
-
-            {/* Worst-Case Envelope Panel (AC 3.6.1, 3.6.2, 3.6.3) */}
-            <EnvelopePanel />
-          </div>
-
-          {/* Dimensional Distribution Charts (AC 3.7.1, 3.7.2, 3.7.3) */}
-          <DistributionChartsPanel />
-
-          {/* Inspection Zone Aggregation (AC 3.9.1-3.9.5) */}
-          <ZoneAggregationPanel />
+          {/* Analysis Panels Grid with collapsible panels (AC-3.10.1-3.10.4) */}
+          <AnalysisPanelGrid />
         </TabsContent>
       </Tabs>
     </div>

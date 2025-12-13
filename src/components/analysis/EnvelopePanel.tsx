@@ -49,6 +49,61 @@ function DimensionDisplay({ label, driver }: DimensionDisplayProps) {
 }
 
 // =============================================================================
+// Content Component (for CollapsiblePanel wrapper)
+// =============================================================================
+
+interface EnvelopePanelContentInnerProps {
+  envelope: EnvelopeResult | null
+  isLoading: boolean
+  isEmpty: boolean
+}
+
+/**
+ * Inner content component without Card wrapper.
+ * Used by both EnvelopePanelContent and EnvelopePanelStandalone.
+ */
+function EnvelopePanelContentInner({
+  envelope,
+  isLoading,
+  isEmpty,
+}: EnvelopePanelContentInnerProps) {
+  // Loading state
+  if (isLoading) {
+    return <p className="text-muted-foreground">Loading...</p>
+  }
+
+  // Empty state (AC 3.6.1: panel with clear header)
+  if (isEmpty || !envelope) {
+    return <p className="text-muted-foreground">Select parts to view envelope</p>
+  }
+
+  // Envelope display (AC 3.6.1, AC 3.6.2)
+  return (
+    <div aria-label="Worst-case envelope dimensions">
+      <DimensionDisplay label="Max Width" driver={envelope.drivers.maxWidth} />
+      <DimensionDisplay label="Max Height" driver={envelope.drivers.maxHeight} />
+      <DimensionDisplay label="Max Length" driver={envelope.drivers.maxLength} />
+    </div>
+  )
+}
+
+/**
+ * Content-only component for use with CollapsiblePanel wrapper.
+ * Uses the useEnvelopeCalculation hook internally.
+ */
+export function EnvelopePanelContent() {
+  const { envelope, isLoading, isEmpty } = useEnvelopeCalculation()
+
+  return (
+    <EnvelopePanelContentInner
+      envelope={envelope}
+      isLoading={isLoading}
+      isEmpty={isEmpty}
+    />
+  )
+}
+
+// =============================================================================
 // Standalone Component (for testing)
 // =============================================================================
 
@@ -66,47 +121,17 @@ export function EnvelopePanelStandalone({
   isLoading,
   isEmpty,
 }: EnvelopePanelStandaloneProps) {
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Worst-Case Envelope</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Loading...</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Empty state (AC 3.6.1: panel with clear header)
-  if (isEmpty || !envelope) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Worst-Case Envelope</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Select parts to view envelope
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Envelope display (AC 3.6.1, AC 3.6.2)
   return (
     <Card>
       <CardHeader>
         <CardTitle>Worst-Case Envelope</CardTitle>
       </CardHeader>
-      {/* AC 3.6.1: ARIA label for accessibility */}
-      <CardContent aria-label="Worst-case envelope dimensions">
-        <DimensionDisplay label="Max Width" driver={envelope.drivers.maxWidth} />
-        <DimensionDisplay label="Max Height" driver={envelope.drivers.maxHeight} />
-        <DimensionDisplay label="Max Length" driver={envelope.drivers.maxLength} />
+      <CardContent>
+        <EnvelopePanelContentInner
+          envelope={envelope}
+          isLoading={isLoading}
+          isEmpty={isEmpty}
+        />
       </CardContent>
     </Card>
   )
