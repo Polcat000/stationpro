@@ -1,7 +1,9 @@
 // src/lib/repositories/__tests__/partsRepository.test.ts
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { partsRepository } from '../partsRepository'
 import type { Part } from '@/lib/schemas/part'
+import { _resetDBConnection } from '@/lib/storage/indexedDBAdapter'
+import { _resetMigrationState } from '@/lib/storage/migrateLegacyStorage'
 
 describe('partsRepository', () => {
   const testPart1: Part = {
@@ -36,7 +38,15 @@ describe('partsRepository', () => {
   }
 
   beforeEach(async () => {
+    _resetMigrationState()
+    _resetDBConnection()
+    localStorage.clear()
     await partsRepository.clear()
+  })
+
+  afterEach(() => {
+    _resetMigrationState()
+    _resetDBConnection()
   })
 
   describe('getAll', () => {
@@ -258,6 +268,38 @@ describe('partsRepository', () => {
     it('handles empty input', async () => {
       const existing = await partsRepository.findExistingCallouts([])
       expect(existing).toEqual([])
+    })
+  })
+
+  describe('large dataset storage (IndexedDB)', () => {
+    it('handles 1000+ parts without error', async () => {
+      const largeParts: Part[] = Array.from({ length: 1000 }, (_, i) => ({
+        PartCallout: `PART-${String(i).padStart(4, '0')}`,
+        PartWidth_mm: 100 + i,
+        PartHeight_mm: 50,
+        PartLength_mm: 150,
+        SmallestLateralFeature_um: 100,
+        InspectionZones: [
+          {
+            ZoneID: `zone-${i}`,
+            Name: `Zone ${i}`,
+            Face: 'Top',
+            ZoneDepth_mm: 2,
+            ZoneOffset_mm: 0,
+            RequiredCoverage_pct: 100,
+            MinPixelsPerFeature: 3,
+          },
+        ],
+      }))
+
+      const result = await partsRepository.upsertMany(largeParts)
+
+      expect(result.created).toHaveLength(1000)
+
+      const all = await partsRepository.getAll()
+      expect(all).toHaveLength(1000)
+      expect(all[0].PartCallout).toBe('PART-0000')
+      expect(all[999].PartCallout).toBe('PART-0999')
     })
   })
 })

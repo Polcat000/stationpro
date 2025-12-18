@@ -5,10 +5,25 @@ export {
   inspectionZoneSchema,
   partSchema,
   partsImportSchema,
+  partFormSchema,
+  inspectionZoneFormSchema,
   type InspectionZone,
+  type InspectionZoneFormInput,
   type Part,
+  type PartFormInput,
   type InspectionFace,
 } from './part'
+
+// Import-specific schemas (handle null → undefined conversion at boundaries)
+export {
+  inspectionZoneImportSchema,
+  partImportSchema,
+  partsImportBulkSchema,
+  preprocessImportData,
+} from './part-import'
+
+// Schema utilities
+export { convertNullsToUndefined, nullToUndefined } from './helpers'
 
 export {
   baseComponentSchema,

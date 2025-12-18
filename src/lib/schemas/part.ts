@@ -67,6 +67,7 @@ export type InspectionZoneFormInput = z.infer<typeof inspectionZoneFormSchema>
 export const partSchema = z.object({
   PartCallout: z.string().min(1, 'Part callout is required'),
   PartSeries: z.string().optional(),
+  PartFamily: z.string().optional(),
   PartWidth_mm: z.number().positive('Width must be positive'),
   PartHeight_mm: z.number().positive('Height must be positive'),
   PartLength_mm: z.number().positive('Length must be positive'),
@@ -84,6 +85,7 @@ export type Part = z.infer<typeof partSchema>
 export const partFormSchema = z.object({
   PartCallout: z.string().min(1, 'Part callout is required'),
   PartSeries: z.string().optional(),
+  PartFamily: z.string().optional(),
   PartWidth_mm: z.number().positive('Width must be positive'),
   PartHeight_mm: z.number().positive('Height must be positive'),
   PartLength_mm: z.number().positive('Length must be positive'),

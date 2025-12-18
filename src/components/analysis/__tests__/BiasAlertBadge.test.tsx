@@ -43,15 +43,18 @@ const outlierSkewBias: BiasResult = {
   hasBias: true,
   biasType: 'outlier-skew',
   severity: 'info',
-  message: 'Dimensional outlier: PART-LARGE is 3.5σ above mean on Width',
+  message: 'Dimensional outlier: PART-LARGE is outside IQR bounds on Width',
   details: {
-    outlierPart: {
-      callout: 'PART-LARGE',
-      dimension: 'Width',
-      deviation: 3.5,
-      value: 200,
-      mean: 50,
-    },
+    outlierParts: [
+      {
+        callout: 'PART-LARGE',
+        dimension: 'Width',
+        value: 200,
+        q1: 45,
+        q3: 55,
+        direction: 'above',
+      },
+    ],
   },
 }
 
@@ -210,12 +213,11 @@ describe('BiasAlertBadgeStandalone', () => {
 
       await waitFor(() => {
         // May appear in multiple places (aria-label + tooltip), so use getAllBy
-        const messages = screen.getAllByText(/PART-LARGE is 3.5σ above mean on Width/)
+        const messages = screen.getAllByText(/PART-LARGE is outside IQR bounds on Width/)
         expect(messages.length).toBeGreaterThanOrEqual(1)
-        const values = screen.getAllByText(/Width: 200mm/)
-        expect(values.length).toBeGreaterThanOrEqual(1)
-        const means = screen.getAllByText(/mean: 50mm/)
-        expect(means.length).toBeGreaterThanOrEqual(1)
+        // New format shows "PART-LARGE: Width = 200mm (above IQR)"
+        const details = screen.getAllByText(/PART-LARGE: Width = 200mm \(above IQR\)/)
+        expect(details.length).toBeGreaterThanOrEqual(1)
       })
     })
   })

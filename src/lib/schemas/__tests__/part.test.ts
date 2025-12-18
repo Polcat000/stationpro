@@ -206,6 +206,15 @@ describe('partSchema', () => {
       }
     })
 
+    it('validates part with optional PartFamily', () => {
+      const part = createValidPart({ PartSeries: 'SEAM-01', PartFamily: 'SEAX' })
+      const result = partSchema.safeParse(part)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.PartFamily).toBe('SEAX')
+      }
+    })
+
     it('validates part with optional SmallestDepthFeature_um', () => {
       const part = createValidPart({ SmallestDepthFeature_um: 50 })
       const result = partSchema.safeParse(part)

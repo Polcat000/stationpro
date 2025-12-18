@@ -10,6 +10,15 @@ import type { Part } from '@/types/domain'
 
 export type BiasType = 'series-dominant' | 'too-few-parts' | 'outlier-skew'
 
+export interface OutlierPartDetail {
+  callout: string
+  dimension: string
+  value: number
+  q1: number
+  q3: number
+  direction: 'above' | 'below'
+}
+
 export interface BiasResult {
   hasBias: boolean
   biasType: BiasType | null
@@ -18,7 +27,7 @@ export interface BiasResult {
   details: {
     dominantSeries?: { name: string; percentage: number; count: number; total: number }
     partCount?: number
-    outlierPart?: { callout: string; dimension: string; deviation: number; value: number; mean: number }
+    outlierParts?: OutlierPartDetail[]
   }
 }
 
@@ -33,7 +42,7 @@ export interface CombinedBiasResult {
 
 const SERIES_DOMINANCE_THRESHOLD = 0.80 // 80%
 const MIN_PARTS_THRESHOLD = 3
-const OUTLIER_SIGMA_THRESHOLD = 2
+const IQR_MULTIPLIER = 1.5 // Tukey's rule for outlier detection
 
 // =============================================================================
 // Bias Detection Functions
@@ -93,9 +102,26 @@ export function detectTooFewParts(parts: Part[]): BiasResult | null {
 }
 
 /**
- * Detects if any part is an outlier (>2 standard deviations from mean) on any dimension.
+ * Helper: Calculate percentile using linear interpolation (same as boxPlotStats.ts)
+ */
+function percentile(sortedValues: number[], p: number): number {
+  const n = sortedValues.length
+  if (n === 0) return 0
+  if (n === 1) return sortedValues[0]
+
+  const index = p * (n - 1)
+  const lower = Math.floor(index)
+  const upper = Math.ceil(index)
+  const weight = index - lower
+
+  if (upper >= n) return sortedValues[n - 1]
+  return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight
+}
+
+/**
+ * Detects if any parts are outliers using 1.5×IQR (Tukey's rule).
  * AC 3.4.3: Outlier Skew Info
- * Uses population standard deviation: σ = √(Σ(x-μ)²/n)
+ * Returns ALL outliers found across all dimensions.
  */
 export function detectOutlierSkew(parts: Part[]): BiasResult | null {
   if (parts.length < MIN_PARTS_THRESHOLD) return null
@@ -107,37 +133,59 @@ export function detectOutlierSkew(parts: Part[]): BiasResult | null {
     PartLength_mm: 'Length',
   }
 
+  const outlierParts: OutlierPartDetail[] = []
+  const seenCallouts = new Set<string>() // Track unique outliers by callout
+
   for (const dim of dimensions) {
     const values = parts.map((p) => p[dim])
-    const mean = values.reduce((a, b) => a + b, 0) / values.length
-    const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length
-    const stdDev = Math.sqrt(variance)
+    const sorted = [...values].sort((a, b) => a - b)
 
-    if (stdDev === 0) continue // All same value, no outliers possible
+    const q1 = percentile(sorted, 0.25)
+    const q3 = percentile(sorted, 0.75)
+    const iqr = q3 - q1
+
+    // If IQR is 0, all values are effectively the same - no outliers
+    if (iqr === 0) continue
+
+    const lowerBound = q1 - IQR_MULTIPLIER * iqr
+    const upperBound = q3 + IQR_MULTIPLIER * iqr
 
     for (const part of parts) {
-      const deviation = Math.abs(part[dim] - mean) / stdDev
-      if (deviation > OUTLIER_SIGMA_THRESHOLD) {
-        const direction = part[dim] > mean ? 'above' : 'below'
-        return {
-          hasBias: true,
-          biasType: 'outlier-skew',
-          severity: 'info',
-          message: `Dimensional outlier: ${part.PartCallout} is ${deviation.toFixed(1)}σ ${direction} mean on ${dimensionLabels[dim]}`,
-          details: {
-            outlierPart: {
-              callout: part.PartCallout,
-              dimension: dimensionLabels[dim],
-              deviation: Number(deviation.toFixed(2)),
-              value: part[dim],
-              mean: Number(mean.toFixed(2)),
-            },
-          },
+      const value = part[dim]
+      if (value < lowerBound || value > upperBound) {
+        // Only add if we haven't seen this part as outlier yet
+        if (!seenCallouts.has(part.PartCallout)) {
+          seenCallouts.add(part.PartCallout)
+          outlierParts.push({
+            callout: part.PartCallout,
+            dimension: dimensionLabels[dim],
+            value,
+            q1: Number(q1.toFixed(2)),
+            q3: Number(q3.toFixed(2)),
+            direction: value > upperBound ? 'above' : 'below',
+          })
         }
       }
     }
   }
-  return null
+
+  if (outlierParts.length === 0) return null
+
+  const count = outlierParts.length
+  const message =
+    count === 1
+      ? `Dimensional outlier: ${outlierParts[0].callout} is outside IQR bounds on ${outlierParts[0].dimension}`
+      : `${count} dimensional outliers detected outside IQR bounds`
+
+  return {
+    hasBias: true,
+    biasType: 'outlier-skew',
+    severity: 'info',
+    message,
+    details: {
+      outlierParts,
+    },
+  }
 }
 
 /**

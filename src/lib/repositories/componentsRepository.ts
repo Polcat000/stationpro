@@ -1,16 +1,17 @@
 // src/lib/repositories/componentsRepository.ts
-// Repository for Component CRUD operations using localStorage
+// Repository for Component CRUD operations using IndexedDB storage
 // Canonical reference: docs/active/arch/data-layer.md
 
 import type { Component } from '@/lib/schemas/component'
 import { logger } from '@/lib/logger'
+import { storage } from '@/lib/storage'
+import { migrateLegacyStorage } from '@/lib/storage/migrateLegacyStorage'
 
-const STORAGE_KEY = 'stationpro-components'
+const STORAGE_KEY = 'stationpro:components'
 
 /**
- * Type-safe localStorage operations for Components.
- * Uses synchronous localStorage under the hood but returns Promises
- * for consistency with potential future async storage adapters.
+ * Type-safe storage operations for Components.
+ * Uses IndexedDB via storage adapter for large dataset support.
  */
 export const componentsRepository = {
   /**
@@ -19,11 +20,13 @@ export const componentsRepository = {
    */
   async getAll(): Promise<Component[]> {
     try {
-      const json = localStorage.getItem(STORAGE_KEY)
-      if (!json) {
+      // Ensure legacy data is migrated before first read
+      await migrateLegacyStorage()
+
+      const components = await storage.get<Component[]>(STORAGE_KEY)
+      if (!components) {
         return []
       }
-      const components = JSON.parse(json) as Component[]
       logger.debug(`Loaded ${components.length} components from storage`, { component: 'componentsRepository' })
       return components
     } catch (error) {
@@ -68,7 +71,7 @@ export const componentsRepository = {
       components.push(component)
     }
 
-    this._persist(components)
+    await this._persist(components)
     logger.info(`Saved component ${component.componentId}`, { component: 'componentsRepository' })
     return component
   },
@@ -94,7 +97,7 @@ export const componentsRepository = {
     }
 
     const allComponents = [...existingComponents, ...componentsToAdd]
-    this._persist(allComponents)
+    await this._persist(allComponents)
 
     logger.info(`Saved ${componentsToAdd.length} new components`, { component: 'componentsRepository' })
     return componentsToAdd
@@ -125,7 +128,7 @@ export const componentsRepository = {
     }
 
     const allComponents = Array.from(existingMap.values())
-    this._persist(allComponents)
+    await this._persist(allComponents)
 
     logger.info(`Upserted components: ${created.length} created, ${updated.length} updated`, {
       component: 'componentsRepository',
@@ -148,7 +151,7 @@ export const componentsRepository = {
     }
 
     components.splice(index, 1)
-    this._persist(components)
+    await this._persist(components)
 
     logger.info(`Deleted component ${id}`, { component: 'componentsRepository' })
     return true
@@ -159,7 +162,7 @@ export const componentsRepository = {
    * @returns Promise<void>
    */
   async clear(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY)
+    await storage.delete(STORAGE_KEY)
     logger.info('Cleared all components from storage', { component: 'componentsRepository' })
   },
 
@@ -176,12 +179,12 @@ export const componentsRepository = {
   },
 
   /**
-   * Internal method to persist components to localStorage.
+   * Internal method to persist components to IndexedDB.
    * @private
    */
-  _persist(components: Component[]): void {
+  async _persist(components: Component[]): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(components))
+      await storage.set(STORAGE_KEY, components)
     } catch (error) {
       logger.error('Failed to persist components to storage', error as Error, { component: 'componentsRepository' })
       throw error

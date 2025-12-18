@@ -2,7 +2,8 @@
 // JSON parsing and Zod validation for parts import
 // Canonical reference: docs/active/arch/forms.md#JSON-Import-Pattern
 
-import { partsImportSchema, partSchema, type Part } from '@/lib/schemas/part'
+import { type Part } from '@/lib/schemas/part'
+import { partsImportBulkSchema, partImportSchema } from '@/lib/schemas/part-import'
 import { componentsImportSchema, componentSchema, type Component } from '@/lib/schemas/component'
 import { logger } from '@/lib/logger'
 
@@ -59,8 +60,8 @@ export function parsePartsJson(jsonString: string): ImportResult<Part[]> {
     }
   }
 
-  // Step 2: Validate against schema
-  const result = partsImportSchema.safeParse(parsed)
+  // Step 2: Validate against import schema (handles null → undefined conversion)
+  const result = partsImportBulkSchema.safeParse(parsed)
 
   if (result.success) {
     logger.info(`Parsed ${result.data.length} parts successfully`, { component: 'parsePartsJson' })
@@ -94,7 +95,8 @@ export function validatePartsIndividually(parts: unknown[]): {
   const invalidParts: Array<{ index: number; data: unknown; errors: ImportError[] }> = []
 
   parts.forEach((part, index) => {
-    const result = partSchema.safeParse(part)
+    // Use import schema for null → undefined conversion
+    const result = partImportSchema.safeParse(part)
     if (result.success) {
       validParts.push(result.data)
     } else {
