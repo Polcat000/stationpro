@@ -29,9 +29,10 @@ class MockWorker {
   private delay: number
   private shouldFail: boolean
 
-  constructor(url: URL | string, _options?: WorkerOptions) {
+  constructor(url: URL | string, options?: WorkerOptions) {
     // Store URL for potential validation (not used in mock)
     void url
+    void options
     this.delay = 10
     this.shouldFail = false
   }
@@ -118,11 +119,14 @@ function createTestOptions(overrides: Partial<Parameters<typeof useWorkerCalcula
     getInputSize: (input: TestInput) => input.values.length,
     threshold: 5,
     syncFallback: (input: TestInput) => ({ sum: input.values.reduce((a, b) => a + b, 0) }),
-    toWorkerPayload: (_input: TestInput): AnalysisRequestPayload => ({
-      type: 'stats',
-      parts: [],
-    }),
-    fromWorkerResponse: (_response: AnalysisResponsePayload): TestResult => ({ sum: 100 }),
+    toWorkerPayload: (input: TestInput): AnalysisRequestPayload => {
+      void input
+      return { type: 'stats', parts: [] }
+    },
+    fromWorkerResponse: (response: AnalysisResponsePayload): TestResult => {
+      void response
+      return { sum: 100 }
+    },
     debounceMs: 10,
     ...overrides,
   }
@@ -272,11 +276,14 @@ describe('useWorkerCalculation', () => {
         onmessage: ((event: MessageEvent) => void) | null = null
         onerror: ((event: ErrorEvent) => void) | null = null
 
-        constructor(_url: URL | string, _options?: WorkerOptions) {
+        constructor(url: URL | string, options?: WorkerOptions) {
           // Worker created successfully, but will fail on postMessage
+          void url
+          void options
         }
 
-        postMessage(_message: unknown): void {
+        postMessage(message: unknown): void {
+          void message
           // Simulate error when trying to process message
           setTimeout(() => {
             if (this.onerror) {
