@@ -29,6 +29,7 @@ export interface TestPart {
   id: string
   callout: string
   series: string
+  family?: string
   dimensions: {
     width: number   // X-axis (mm)
     height: number  // Y-axis (mm)

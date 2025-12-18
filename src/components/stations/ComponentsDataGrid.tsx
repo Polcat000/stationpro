@@ -1,20 +1,21 @@
 // src/components/stations/ComponentsDataGrid.tsx
-// Data grid using TanStack Table with shadcn/ui Table (AC 2.8.2)
-// Ref: docs/sprint-artifacts/2-8-components-library-screen.md
+// Virtualized data grid using TanStack Table + TanStack Virtual (Story 3.12)
+// Ref: docs/sprint-artifacts/2-8-components-library-screen.md, 3-12-table-virtualization.md
 
+import * as React from 'react'
 import {
   flexRender,
   type Table as TanStackTable,
+  type Row,
 } from '@tanstack/react-table'
 import type { Component } from '@/lib/schemas/component'
 import {
-  Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { VirtualizedTable, ROW_HEIGHTS } from '@/components/ui/VirtualizedTable'
 import { cn } from '@/lib/utils'
 import { columns } from './columns'
 import { ManufacturerGroupHeader } from './ManufacturerGroupHeader'
@@ -25,10 +26,9 @@ export interface ComponentsDataGridProps {
 }
 
 export function ComponentsDataGrid({ table, onRowClick }: ComponentsDataGridProps) {
-  const rows = table.getRowModel().rows
-
-  return (
-    <Table>
+  // Render table header
+  const renderHeader = React.useCallback(
+    () => (
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
@@ -45,58 +45,88 @@ export function ComponentsDataGrid({ table, onRowClick }: ComponentsDataGridProp
           </TableRow>
         ))}
       </TableHeader>
-      <TableBody>
-        {rows.length === 0 ? (
-          <TableRow>
-            <TableCell
-              colSpan={columns.length}
-              className="h-24 text-center text-muted-foreground"
-            >
-              No components found.
+    ),
+    [table]
+  )
+
+  // Render empty state
+  const renderEmpty = React.useCallback(
+    () => (
+      <TableRow>
+        <TableCell
+          colSpan={columns.length}
+          className="h-24 text-center text-muted-foreground"
+        >
+          No components found.
+        </TableCell>
+      </TableRow>
+    ),
+    []
+  )
+
+  // Render individual row (grouped or data)
+  const renderRow = React.useCallback(
+    (row: Row<Component>) => {
+      // Grouped row (manufacturer header)
+      if (row.getIsGrouped()) {
+        const manufacturer = row.getValue('Manufacturer') as string
+        const leafRows = row.getLeafRows()
+        const componentIdsInGroup = leafRows.map((r) => r.original.componentId)
+
+        return (
+          <TableRow
+            key={row.id}
+            className="bg-muted/50 hover:bg-muted"
+            data-virtualized-row
+          >
+            <TableCell colSpan={columns.length}>
+              <ManufacturerGroupHeader
+                manufacturer={manufacturer}
+                componentIdsInGroup={componentIdsInGroup}
+                isExpanded={row.getIsExpanded()}
+                onToggleExpand={() => row.toggleExpanded()}
+              />
             </TableCell>
           </TableRow>
-        ) : (
-          rows.map((row) => {
-            // Check if this is a grouped row (manufacturer header)
-            if (row.getIsGrouped()) {
-              const manufacturer = row.getValue('Manufacturer') as string
-              const leafRows = row.getLeafRows()
-              const componentIdsInGroup = leafRows.map((r) => r.original.componentId)
+        )
+      }
 
-              return (
-                <TableRow key={row.id} className="bg-muted/50 hover:bg-muted">
-                  <TableCell colSpan={columns.length}>
-                    <ManufacturerGroupHeader
-                      manufacturer={manufacturer}
-                      componentIdsInGroup={componentIdsInGroup}
-                      isExpanded={row.getIsExpanded()}
-                      onToggleExpand={() => row.toggleExpanded()}
-                    />
-                  </TableCell>
-                </TableRow>
-              )
-            }
+      // Regular data row
+      return (
+        <TableRow
+          key={row.id}
+          className={cn('cursor-pointer')}
+          onClick={() => onRowClick(row.original)}
+          data-state={row.getIsSelected() ? 'selected' : undefined}
+          data-virtualized-row
+        >
+          {row.getVisibleCells().map((cell) => (
+            <TableCell key={cell.id}>
+              {cell.getIsGrouped()
+                ? null
+                : flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      )
+    },
+    [onRowClick]
+  )
 
-            // Regular data row
-            return (
-              <TableRow
-                key={row.id}
-                className={cn('cursor-pointer')}
-                onClick={() => onRowClick(row.original)}
-                data-state={row.getIsSelected() ? 'selected' : undefined}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {cell.getIsGrouped() ? null : (
-                      flexRender(cell.column.columnDef.cell, cell.getContext())
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            )
-          })
-        )}
-      </TableBody>
-    </Table>
+  // Custom size estimator for grouped vs data rows
+  const estimateSize = React.useCallback(
+    (row: Row<Component>) => (row.getIsGrouped() ? ROW_HEIGHTS.GROUP : ROW_HEIGHTS.DATA),
+    []
+  )
+
+  return (
+    <VirtualizedTable
+      table={table}
+      renderRow={renderRow}
+      renderHeader={renderHeader}
+      renderEmpty={renderEmpty}
+      estimateSize={estimateSize}
+      testId="components-data-grid"
+    />
   )
 }

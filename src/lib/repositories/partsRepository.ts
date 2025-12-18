@@ -1,16 +1,17 @@
 // src/lib/repositories/partsRepository.ts
-// Repository for Part CRUD operations using localStorage
+// Repository for Part CRUD operations using IndexedDB storage
 // Canonical reference: docs/active/arch/data-layer.md
 
 import type { Part } from '@/lib/schemas/part'
 import { logger } from '@/lib/logger'
+import { storage } from '@/lib/storage'
+import { migrateLegacyStorage } from '@/lib/storage/migrateLegacyStorage'
 
-const STORAGE_KEY = 'stationpro-parts'
+const STORAGE_KEY = 'stationpro:parts'
 
 /**
- * Type-safe localStorage operations for Parts.
- * Uses synchronous localStorage under the hood but returns Promises
- * for consistency with potential future async storage adapters.
+ * Type-safe storage operations for Parts.
+ * Uses IndexedDB via storage adapter for large dataset support.
  */
 export const partsRepository = {
   /**
@@ -19,11 +20,13 @@ export const partsRepository = {
    */
   async getAll(): Promise<Part[]> {
     try {
-      const json = localStorage.getItem(STORAGE_KEY)
-      if (!json) {
+      // Ensure legacy data is migrated before first read
+      await migrateLegacyStorage()
+
+      const parts = await storage.get<Part[]>(STORAGE_KEY)
+      if (!parts) {
         return []
       }
-      const parts = JSON.parse(json) as Part[]
       logger.debug(`Loaded ${parts.length} parts from storage`, { component: 'partsRepository' })
       return parts
     } catch (error) {
@@ -68,7 +71,7 @@ export const partsRepository = {
       parts.push(part)
     }
 
-    this._persist(parts)
+    await this._persist(parts)
     logger.info(`Saved part ${part.PartCallout}`, { component: 'partsRepository' })
     return part
   },
@@ -94,7 +97,7 @@ export const partsRepository = {
     }
 
     const allParts = [...existingParts, ...partsToAdd]
-    this._persist(allParts)
+    await this._persist(allParts)
 
     logger.info(`Saved ${partsToAdd.length} new parts`, { component: 'partsRepository' })
     return partsToAdd
@@ -125,7 +128,7 @@ export const partsRepository = {
     }
 
     const allParts = Array.from(existingMap.values())
-    this._persist(allParts)
+    await this._persist(allParts)
 
     logger.info(`Upserted parts: ${created.length} created, ${updated.length} updated`, {
       component: 'partsRepository',
@@ -148,7 +151,7 @@ export const partsRepository = {
     }
 
     parts.splice(index, 1)
-    this._persist(parts)
+    await this._persist(parts)
 
     logger.info(`Deleted part ${callout}`, { component: 'partsRepository' })
     return true
@@ -159,7 +162,7 @@ export const partsRepository = {
    * @returns Promise<void>
    */
   async clear(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY)
+    await storage.delete(STORAGE_KEY)
     logger.info('Cleared all parts from storage', { component: 'partsRepository' })
   },
 
@@ -176,12 +179,12 @@ export const partsRepository = {
   },
 
   /**
-   * Internal method to persist parts to localStorage.
+   * Internal method to persist parts to IndexedDB.
    * @private
    */
-  _persist(parts: Part[]): void {
+  async _persist(parts: Part[]): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(parts))
+      await storage.set(STORAGE_KEY, parts)
     } catch (error) {
       logger.error('Failed to persist parts to storage', error as Error, { component: 'partsRepository' })
       throw error

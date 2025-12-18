@@ -195,7 +195,7 @@
   },
   {
     "componentId": "lens-tele-opto-tc12036",
-    "componentType": "TelecentricLens",
+    "componentType": "Lens",
     "Manufacturer": "Opto Engineering",
     "Model": "TC12036",
     "PartNumber": "TC12036",
@@ -213,7 +213,7 @@
   },
   {
     "componentId": "lens-tele-silloptics-s5lpj2568",
-    "componentType": "TelecentricLens",
+    "componentType": "Lens",
     "Manufacturer": "Sill Optics",
     "Model": "S5LPJ2568",
     "LensType": "Telecentric",
@@ -230,7 +230,7 @@
   },
   {
     "componentId": "lens-ffl-fuji-cf25za",
-    "componentType": "FixedFocalLengthLens",
+    "componentType": "Lens",
     "Manufacturer": "Fujifilm",
     "Model": "CF25ZA-1S",
     "PartNumber": "CF25ZA-1S",
@@ -246,7 +246,7 @@
   },
   {
     "componentId": "lens-ffl-edmund-86572",
-    "componentType": "FixedFocalLengthLens",
+    "componentType": "Lens",
     "Manufacturer": "Edmund Optics",
     "Model": "TECHSPEC 50mm C Series",
     "PartNumber": "86-572",

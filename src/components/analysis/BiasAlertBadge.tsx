@@ -47,7 +47,10 @@ function BiasAlertItem({ bias }: { bias: BiasResult }) {
             )}
             {bias.biasType === 'series-dominant' && 'Series Bias'}
             {bias.biasType === 'too-few-parts' && 'Small Sample'}
-            {bias.biasType === 'outlier-skew' && 'Outlier Detected'}
+            {bias.biasType === 'outlier-skew' &&
+              (bias.details.outlierParts && bias.details.outlierParts.length > 1
+                ? `${bias.details.outlierParts.length} Outliers`
+                : 'Outlier Detected')}
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
@@ -67,11 +70,17 @@ function BiasAlertItem({ bias }: { bias: BiasResult }) {
             </p>
           )}
 
-          {bias.details.outlierPart && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {bias.details.outlierPart.dimension}: {bias.details.outlierPart.value}mm
-              (mean: {bias.details.outlierPart.mean}mm)
-            </p>
+          {bias.details.outlierParts && bias.details.outlierParts.length > 0 && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {bias.details.outlierParts.slice(0, 5).map((outlier, idx) => (
+                <p key={idx}>
+                  {outlier.callout}: {outlier.dimension} = {outlier.value}mm ({outlier.direction} IQR)
+                </p>
+              ))}
+              {bias.details.outlierParts.length > 5 && (
+                <p className="italic">...and {bias.details.outlierParts.length - 5} more</p>
+              )}
+            </div>
           )}
         </TooltipContent>
       </Tooltip>

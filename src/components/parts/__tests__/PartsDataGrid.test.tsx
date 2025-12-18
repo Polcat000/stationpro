@@ -281,4 +281,71 @@ describe('PartsDataGrid', () => {
       expect(onRowClick).not.toHaveBeenCalled()
     })
   })
+
+  // Story 3.12: Virtualization tests
+  describe('Virtualization (Story 3.12)', () => {
+    // Generate large dataset for virtualization testing
+    function generateLargeDataset(count: number): Part[] {
+      return Array.from({ length: count }, (_, i): Part => ({
+        PartCallout: `PART-${String(i + 1).padStart(4, '0')}`,
+        PartSeries: `Series-${String.fromCharCode(65 + (i % 26))}`,
+        PartWidth_mm: 100 + i,
+        PartHeight_mm: 50 + i,
+        PartLength_mm: 200 + i,
+        SmallestLateralFeature_um: 10 + (i % 10),
+        InspectionZones: [
+          {
+            ZoneID: `Z${i + 1}`,
+            Name: `Zone ${i + 1}`,
+            Face: 'Top',
+            ZoneDepth_mm: 5,
+            ZoneOffset_mm: 0,
+            RequiredCoverage_pct: 100,
+            MinPixelsPerFeature: 3,
+          },
+        ],
+      }))
+    }
+
+    it('renders virtualized container with data-testid', () => {
+      const onRowClick = vi.fn()
+      render(<TestWrapper parts={mockParts} onRowClick={onRowClick} />)
+
+      const container = screen.getByTestId('parts-data-grid')
+      expect(container).toBeInTheDocument()
+    })
+
+    it('renders fewer DOM rows than total data count for large datasets', () => {
+      const onRowClick = vi.fn()
+      const largeDataset = generateLargeDataset(100)
+      render(<TestWrapper parts={largeDataset} onRowClick={onRowClick} />)
+
+      // With virtualization, only visible rows + overscan should be rendered
+      // Container height is 600px (mocked), row height is 41px
+      // ~14 visible + 5 overscan each direction = ~24 rows max
+      const dataRows = screen.getAllByRole('row').filter(
+        (row) => row.getAttribute('data-virtualized-row') !== null
+      )
+
+      // Should render significantly fewer rows than total count
+      expect(dataRows.length).toBeLessThan(largeDataset.length)
+      // Should render at least some rows (the visible ones)
+      expect(dataRows.length).toBeGreaterThan(0)
+    })
+
+    it('preserves row click functionality with virtualization', async () => {
+      const user = userEvent.setup()
+      const onRowClick = vi.fn()
+      const largeDataset = generateLargeDataset(50)
+      render(<TestWrapper parts={largeDataset} onRowClick={onRowClick} />)
+
+      // Find first virtualized row and click it
+      const dataRows = screen.getAllByRole('row').filter(
+        (row) => row.getAttribute('data-virtualized-row') !== null
+      )
+      await user.click(dataRows[0])
+
+      expect(onRowClick).toHaveBeenCalled()
+    })
+  })
 })

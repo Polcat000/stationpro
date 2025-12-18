@@ -1,8 +1,10 @@
 // src/components/analysis/AggregateStatsPanel.tsx
 // Component for displaying aggregate statistics across working set parts
 // AC 3.5.1, 3.5.2, 3.5.4, 3.5.5: Statistics display with empty/single-part handling
+// Story 3.14 AC3: Loading state pattern for worker-backed calculations
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 import { useAggregateStats } from '@/hooks/useAggregateStats'
 import type { DimensionStats, AggregateStatistics } from '@/lib/analysis/statistics'
 
@@ -71,19 +73,23 @@ function DimensionRow({ label, stats, unit }: DimensionRowProps) {
 interface AggregateStatsPanelContentInnerProps {
   stats: AggregateStatistics | null
   isLoading: boolean
+  isCalculating: boolean
   isEmpty: boolean
 }
 
 /**
  * Inner content component without Card wrapper.
  * Used by both AggregateStatsPanelContent and AggregateStatsPanelStandalone.
+ *
+ * Story 3.14 AC3: Shows subtle loading indicator during worker calculation.
  */
 function AggregateStatsPanelContentInner({
   stats,
   isLoading,
+  isCalculating,
   isEmpty,
 }: AggregateStatsPanelContentInnerProps) {
-  // Loading state
+  // Loading state (initial data fetch)
   if (isLoading) {
     return <p className="text-muted-foreground">Loading...</p>
   }
@@ -96,8 +102,18 @@ function AggregateStatsPanelContentInner({
   }
 
   // Statistics display (AC 3.5.1, 3.5.2)
+  // Story 3.14 AC3: Relative positioning for calculating overlay
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
+      {/* Calculating indicator - subtle overlay with spinner */}
+      {isCalculating && (
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center bg-background/50"
+          aria-label="Calculating statistics"
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
       <table
         className="w-full text-sm"
         aria-label="Aggregate statistics for selected parts"
@@ -134,12 +150,13 @@ function AggregateStatsPanelContentInner({
  * Uses the useAggregateStats hook internally.
  */
 export function AggregateStatsPanelContent() {
-  const { stats, isLoading, isEmpty } = useAggregateStats()
+  const { stats, isLoading, isCalculating, isEmpty } = useAggregateStats()
 
   return (
     <AggregateStatsPanelContentInner
       stats={stats}
       isLoading={isLoading}
+      isCalculating={isCalculating}
       isEmpty={isEmpty}
     />
   )
@@ -152,15 +169,18 @@ export function AggregateStatsPanelContent() {
 export interface AggregateStatsPanelStandaloneProps {
   stats: AggregateStatistics | null
   isLoading: boolean
+  isCalculating?: boolean
   isEmpty: boolean
 }
 
 /**
  * Standalone component that accepts props directly (for testing without hook)
+ * Story 3.14 AC3: Supports isCalculating prop for loading indicator
  */
 export function AggregateStatsPanelStandalone({
   stats,
   isLoading,
+  isCalculating = false,
   isEmpty,
 }: AggregateStatsPanelStandaloneProps) {
   return (
@@ -172,6 +192,7 @@ export function AggregateStatsPanelStandalone({
         <AggregateStatsPanelContentInner
           stats={stats}
           isLoading={isLoading}
+          isCalculating={isCalculating}
           isEmpty={isEmpty}
         />
       </CardContent>
@@ -186,14 +207,16 @@ export function AggregateStatsPanelStandalone({
 /**
  * Main component that uses the useAggregateStats hook
  * AC 3.5.3: Auto-update on working set change (via hook)
+ * Story 3.14 AC3: Loading state pattern with isCalculating
  */
 export function AggregateStatsPanel() {
-  const { stats, isLoading, isEmpty } = useAggregateStats()
+  const { stats, isLoading, isCalculating, isEmpty } = useAggregateStats()
 
   return (
     <AggregateStatsPanelStandalone
       stats={stats}
       isLoading={isLoading}
+      isCalculating={isCalculating}
       isEmpty={isEmpty}
     />
   )

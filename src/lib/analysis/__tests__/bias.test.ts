@@ -173,7 +173,7 @@ describe('detectTooFewParts', () => {
 })
 
 // =============================================================================
-// detectOutlierSkew Tests (AC 3.4.3)
+// detectOutlierSkew Tests (AC 3.4.3) - IQR-based (1.5×IQR Tukey's rule)
 // =============================================================================
 
 describe('detectOutlierSkew', () => {
@@ -185,11 +185,12 @@ describe('detectOutlierSkew', () => {
     expect(detectOutlierSkew(parts)).toBeNull()
   })
 
-  it('returns null when all dimensions are similar', () => {
+  it('returns null when all dimensions are within IQR bounds', () => {
+    // Uniform distribution - no outliers
     const parts = Array.from({ length: 10 }, (_, i) =>
       createTestPart({
         PartCallout: `P${i}`,
-        PartWidth_mm: 20 + i * 0.1, // Very small variation
+        PartWidth_mm: 20 + i, // 20-29, uniform spread
         PartHeight_mm: 10,
         PartLength_mm: 30,
       })
@@ -197,7 +198,7 @@ describe('detectOutlierSkew', () => {
     expect(detectOutlierSkew(parts)).toBeNull()
   })
 
-  it('returns null when all values are identical (stdDev = 0)', () => {
+  it('returns null when all values are identical (IQR = 0)', () => {
     const parts = Array.from({ length: 5 }, (_, i) =>
       createTestPart({
         PartCallout: `P${i}`,
@@ -209,16 +210,20 @@ describe('detectOutlierSkew', () => {
     expect(detectOutlierSkew(parts)).toBeNull()
   })
 
-  it('detects width outlier >2σ from mean', () => {
-    // 9 parts at 20mm, 1 part at 100mm
-    // Mean = (9*20 + 100)/10 = 280/10 = 28
-    // Variance = (9*(20-28)² + (100-28)²)/10 = (9*64 + 5184)/10 = 576 + 518.4 = 1094.4/10... wait, let me recalc
-    // Actually: Variance = (9*64 + 5184)/10 = (576 + 5184)/10 = 5760/10 = 576
-    // StdDev = 24
-    // Deviation of 100mm part = |100 - 28| / 24 = 72/24 = 3σ
+  it('detects width outlier outside 1.5×IQR bounds', () => {
+    // Create dataset where one value is clearly outside IQR bounds
+    // Values: [10, 10, 10, 10, 10, 10, 10, 10, 10, 100]
+    // Q1 = 10, Q3 = 10, IQR = 0... this won't work
+    // Need variation. Let's use: [10, 11, 12, 13, 14, 15, 16, 17, 18, 100]
+    // Sorted: [10, 11, 12, 13, 14, 15, 16, 17, 18, 100]
+    // Q1 (25th percentile, index 2.25): ~12.25
+    // Q3 (75th percentile, index 6.75): ~16.75
+    // IQR = 4.5
+    // Upper bound = 16.75 + 1.5*4.5 = 16.75 + 6.75 = 23.5
+    // 100 > 23.5 → outlier
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 20 })
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
       ),
       createTestPart({ PartCallout: 'OUTLIER-001', PartWidth_mm: 100 }),
     ]
@@ -226,108 +231,143 @@ describe('detectOutlierSkew', () => {
     expect(result?.hasBias).toBe(true)
     expect(result?.biasType).toBe('outlier-skew')
     expect(result?.severity).toBe('info')
-    expect(result?.details.outlierPart?.callout).toBe('OUTLIER-001')
-    expect(result?.details.outlierPart?.dimension).toBe('Width')
-    expect(result?.details.outlierPart?.deviation).toBeGreaterThan(2)
+    expect(result?.details.outlierParts).toBeDefined()
+    expect(result?.details.outlierParts?.length).toBe(1)
+    expect(result?.details.outlierParts?.[0].callout).toBe('OUTLIER-001')
+    expect(result?.details.outlierParts?.[0].dimension).toBe('Width')
     expect(result?.message).toContain('OUTLIER-001')
-    expect(result?.message).toContain('Width')
   })
 
   it('detects height outlier', () => {
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartHeight_mm: 50 })
+        createTestPart({ PartCallout: `N${i}`, PartHeight_mm: 50 + i })
       ),
       createTestPart({ PartCallout: 'TALL-PART', PartHeight_mm: 250 }),
     ]
     const result = detectOutlierSkew(parts)
     expect(result?.hasBias).toBe(true)
-    expect(result?.details.outlierPart?.dimension).toBe('Height')
+    expect(result?.details.outlierParts?.[0].dimension).toBe('Height')
   })
 
   it('detects length outlier', () => {
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartLength_mm: 100 })
+        createTestPart({ PartCallout: `N${i}`, PartLength_mm: 100 + i })
       ),
       createTestPart({ PartCallout: 'LONG-PART', PartLength_mm: 500 }),
     ]
     const result = detectOutlierSkew(parts)
     expect(result?.hasBias).toBe(true)
-    expect(result?.details.outlierPart?.dimension).toBe('Length')
+    expect(result?.details.outlierParts?.[0].dimension).toBe('Length')
   })
 
-  it('does NOT detect outlier at exactly 2σ (threshold is >2, not >=2)', () => {
-    // Create a scenario where deviation is exactly 2σ
-    // For n=3 parts: [0, 0, x] where x makes std dev such that deviation = 2
-    // Mean = x/3, Variance = (0-x/3)² + (0-x/3)² + (x-x/3)² / 3
-    // This is complex to construct exactly, so let's use a near-boundary test
-    // Actually, let's test with values that result in ~2σ
-    // Simple case: [0, 2, 4] → mean=2, variance=(4+0+4)/3=2.67, stddev=1.63
-    // For value 0: deviation = |0-2|/1.63 = 1.23 (below threshold)
-    // For value 4: deviation = |4-2|/1.63 = 1.23 (below threshold)
-
-    // Let's use parts that don't exceed threshold
+  it('does NOT detect values within 1.5×IQR bounds', () => {
+    // Create dataset where max is just inside bounds
+    // Values: [10, 12, 14, 16, 18] → Q1=11, Q3=17, IQR=6
+    // Upper bound = 17 + 9 = 26, Lower bound = 11 - 9 = 2
+    // All values 10-18 are within [2, 26]
     const parts = [
       createTestPart({ PartCallout: 'P1', PartWidth_mm: 10 }),
       createTestPart({ PartCallout: 'P2', PartWidth_mm: 12 }),
       createTestPart({ PartCallout: 'P3', PartWidth_mm: 14 }),
+      createTestPart({ PartCallout: 'P4', PartWidth_mm: 16 }),
+      createTestPart({ PartCallout: 'P5', PartWidth_mm: 18 }),
     ]
-    // Mean = 12, variance = (4+0+4)/3 = 2.67, stddev = 1.63
-    // Max deviation = 2/1.63 = 1.23σ (below threshold)
     expect(detectOutlierSkew(parts)).toBeNull()
   })
 
-  it('includes direction in message (above/below mean)', () => {
+  it('returns direction (above/below) in outlier details', () => {
     const partsAbove = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 20 })
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
       ),
       createTestPart({ PartCallout: 'BIG', PartWidth_mm: 100 }),
     ]
     const resultAbove = detectOutlierSkew(partsAbove)
-    expect(resultAbove?.message).toContain('above')
+    expect(resultAbove?.details.outlierParts?.[0].direction).toBe('above')
 
     const partsBelow = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 100 })
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 90 + i })
       ),
-      createTestPart({ PartCallout: 'SMALL', PartWidth_mm: 10 }),
+      createTestPart({ PartCallout: 'SMALL', PartWidth_mm: 1 }),
     ]
     const resultBelow = detectOutlierSkew(partsBelow)
-    expect(resultBelow?.message).toContain('below')
+    expect(resultBelow?.details.outlierParts?.[0].direction).toBe('below')
   })
 
-  it('provides actual value and mean in details', () => {
+  it('provides actual value and quartiles in details', () => {
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
-        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 20 })
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
       ),
       createTestPart({ PartCallout: 'OUTLIER', PartWidth_mm: 100 }),
     ]
     const result = detectOutlierSkew(parts)
-    expect(result?.details.outlierPart?.value).toBe(100)
-    expect(result?.details.outlierPart?.mean).toBeCloseTo(28, 0)
+    expect(result?.details.outlierParts?.[0].value).toBe(100)
+    expect(result?.details.outlierParts?.[0].q1).toBeDefined()
+    expect(result?.details.outlierParts?.[0].q3).toBeDefined()
   })
 
-  it('checks dimensions in order: Width, Height, Length (returns first found)', () => {
-    // Part with outliers in both width and height - should return width first
+  it('returns ALL outliers, not just first', () => {
+    // Two outliers in width dimension
+    const parts = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
+      ),
+      createTestPart({ PartCallout: 'OUTLIER-LOW', PartWidth_mm: -100 }),
+      createTestPart({ PartCallout: 'OUTLIER-HIGH', PartWidth_mm: 200 }),
+    ]
+    const result = detectOutlierSkew(parts)
+    expect(result?.details.outlierParts?.length).toBe(2)
+  })
+
+  it('deduplicates outliers by callout (same part outlier on multiple dimensions counted once)', () => {
+    // One part that's outlier on both width AND height
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
         createTestPart({
           PartCallout: `N${i}`,
-          PartWidth_mm: 20,
-          PartHeight_mm: 50,
+          PartWidth_mm: 10 + i,
+          PartHeight_mm: 50 + i,
         })
       ),
       createTestPart({
-        PartCallout: 'OUTLIER',
-        PartWidth_mm: 100,  // outlier
-        PartHeight_mm: 250, // also outlier
+        PartCallout: 'MULTI-OUTLIER',
+        PartWidth_mm: 200,  // outlier on width
+        PartHeight_mm: 500, // outlier on height
       }),
     ]
     const result = detectOutlierSkew(parts)
-    expect(result?.details.outlierPart?.dimension).toBe('Width')
+    // Should only count MULTI-OUTLIER once (first dimension found: Width)
+    expect(result?.details.outlierParts?.length).toBe(1)
+    expect(result?.details.outlierParts?.[0].callout).toBe('MULTI-OUTLIER')
+    expect(result?.details.outlierParts?.[0].dimension).toBe('Width')
+  })
+
+  it('message format: singular for 1 outlier, plural for multiple', () => {
+    // Single outlier
+    const partsSingle = [
+      ...Array.from({ length: 9 }, (_, i) =>
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
+      ),
+      createTestPart({ PartCallout: 'ONE-OUTLIER', PartWidth_mm: 100 }),
+    ]
+    const resultSingle = detectOutlierSkew(partsSingle)
+    expect(resultSingle?.message).toContain('ONE-OUTLIER')
+    expect(resultSingle?.message).toContain('IQR')
+
+    // Multiple outliers
+    const partsMulti = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        createTestPart({ PartCallout: `N${i}`, PartWidth_mm: 10 + i })
+      ),
+      createTestPart({ PartCallout: 'OUT1', PartWidth_mm: -100 }),
+      createTestPart({ PartCallout: 'OUT2', PartWidth_mm: 200 }),
+    ]
+    const resultMulti = detectOutlierSkew(partsMulti)
+    expect(resultMulti?.message).toContain('2 dimensional outliers')
   })
 })
 
@@ -382,17 +422,17 @@ describe('detectBias', () => {
 
   it('returns single bias when only outlier detected', () => {
     // Need 10 parts with different series (no single series >80%)
-    // and outlier in dimensions
+    // and outlier in dimensions - IQR requires variation in normal values
     const parts = [
-      createTestPart({ PartCallout: 'P0', PartSeries: 'Series0', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P1', PartSeries: 'Series1', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P2', PartSeries: 'Series2', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P3', PartSeries: 'Series3', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P4', PartSeries: 'Series4', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P5', PartSeries: 'Series5', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P6', PartSeries: 'Series6', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P7', PartSeries: 'Series7', PartWidth_mm: 20 }),
-      createTestPart({ PartCallout: 'P8', PartSeries: 'Series8', PartWidth_mm: 20 }),
+      createTestPart({ PartCallout: 'P0', PartSeries: 'Series0', PartWidth_mm: 10 }),
+      createTestPart({ PartCallout: 'P1', PartSeries: 'Series1', PartWidth_mm: 11 }),
+      createTestPart({ PartCallout: 'P2', PartSeries: 'Series2', PartWidth_mm: 12 }),
+      createTestPart({ PartCallout: 'P3', PartSeries: 'Series3', PartWidth_mm: 13 }),
+      createTestPart({ PartCallout: 'P4', PartSeries: 'Series4', PartWidth_mm: 14 }),
+      createTestPart({ PartCallout: 'P5', PartSeries: 'Series5', PartWidth_mm: 15 }),
+      createTestPart({ PartCallout: 'P6', PartSeries: 'Series6', PartWidth_mm: 16 }),
+      createTestPart({ PartCallout: 'P7', PartSeries: 'Series7', PartWidth_mm: 17 }),
+      createTestPart({ PartCallout: 'P8', PartSeries: 'Series8', PartWidth_mm: 18 }),
       createTestPart({ PartCallout: 'OUTLIER', PartSeries: 'Other', PartWidth_mm: 200 }),
     ]
     const result = detectBias(parts)
@@ -402,18 +442,19 @@ describe('detectBias', () => {
   })
 
   it('returns multiple biases when series dominance AND outlier detected', () => {
+    // IQR requires variation - use incrementing values for non-outlier parts
     const parts = [
       ...Array.from({ length: 9 }, (_, i) =>
         createTestPart({
           PartCallout: `P${i}`,
           PartSeries: 'Dominant',
-          PartWidth_mm: 20,
+          PartWidth_mm: 10 + i, // 10-18, gives IQR variation
         })
       ),
       createTestPart({
         PartCallout: 'OUTLIER',
-        PartSeries: 'Dominant', // Still dominant
-        PartWidth_mm: 200, // But also outlier
+        PartSeries: 'Dominant', // Still dominant (100%)
+        PartWidth_mm: 200, // But also outlier (outside IQR bounds)
       }),
     ]
     const result = detectBias(parts)

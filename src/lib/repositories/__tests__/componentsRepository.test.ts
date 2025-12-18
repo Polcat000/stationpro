@@ -1,7 +1,9 @@
 // src/lib/repositories/__tests__/componentsRepository.test.ts
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { componentsRepository } from '../componentsRepository'
 import type { LaserLineProfiler, AreascanCamera } from '@/lib/schemas/component'
+import { _resetDBConnection } from '@/lib/storage/indexedDBAdapter'
+import { _resetMigrationState } from '@/lib/storage/migrateLegacyStorage'
 
 describe('componentsRepository', () => {
   const testComponent1: LaserLineProfiler = {
@@ -40,7 +42,15 @@ describe('componentsRepository', () => {
   }
 
   beforeEach(async () => {
+    _resetMigrationState()
+    _resetDBConnection()
+    localStorage.clear()
     await componentsRepository.clear()
+  })
+
+  afterEach(() => {
+    _resetMigrationState()
+    _resetDBConnection()
   })
 
   describe('getAll', () => {

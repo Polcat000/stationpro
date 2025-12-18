@@ -544,6 +544,91 @@ describe('componentSchema', () => {
 })
 
 // =============================================================================
+// Lens Filtering Tests (AC 3.11.1 - Both subtypes filter by componentType='Lens')
+// =============================================================================
+
+describe('lens filtering by componentType', () => {
+  it('both Telecentric and FixedFocalLength lenses have componentType="Lens"', () => {
+    const telecentricLens = createValidTelecentricLens()
+    const fixedFocalLens = createValidFixedFocalLengthLens()
+
+    const telecentricResult = componentSchema.safeParse(telecentricLens)
+    const fixedFocalResult = componentSchema.safeParse(fixedFocalLens)
+
+    expect(telecentricResult.success).toBe(true)
+    expect(fixedFocalResult.success).toBe(true)
+
+    if (telecentricResult.success && fixedFocalResult.success) {
+      // Both must have componentType='Lens' for filtering to work
+      expect(telecentricResult.data.componentType).toBe('Lens')
+      expect(fixedFocalResult.data.componentType).toBe('Lens')
+    }
+  })
+
+  it('filtering by componentType="Lens" includes both subtypes', () => {
+    const components = [
+      createValidLaserProfiler({ componentId: 'laser-1' }),
+      createValidTelecentricLens({ componentId: 'tele-1' }),
+      createValidFixedFocalLengthLens({ componentId: 'ffl-1' }),
+      createValidAreascanCamera({ componentId: 'camera-1' }),
+      createValidTelecentricLens({ componentId: 'tele-2' }),
+    ]
+
+    // Parse all components
+    const parsedComponents = components
+      .map((c) => componentSchema.safeParse(c))
+      .filter((r) => r.success)
+      .map((r) => (r.success ? r.data : null))
+      .filter((c) => c !== null)
+
+    // Filter by componentType='Lens' (simulates UI filter)
+    const lensFilter = (c: { componentType: string }) => c.componentType === 'Lens'
+    const filteredLenses = parsedComponents.filter(lensFilter)
+
+    // Should include all 3 lens components (2 telecentric + 1 fixed focal)
+    expect(filteredLenses).toHaveLength(3)
+
+    // Verify we got both subtypes
+    const lensTypes = filteredLenses.map((l) => (l as { LensType: string }).LensType)
+    expect(lensTypes.filter((t) => t === 'Telecentric')).toHaveLength(2)
+    expect(lensTypes.filter((t) => t === 'FixedFocalLength')).toHaveLength(1)
+  })
+
+  it('rejects legacy "TelecentricLens" componentType', () => {
+    const invalidLens = {
+      ...createBaseComponent(),
+      componentType: 'TelecentricLens', // Legacy incorrect value
+      LensType: 'Telecentric',
+      Mount: 'C',
+      MaxSensorSize_mm: 11.0,
+      ApertureMin_fnum: 4.0,
+      ApertureMax_fnum: 16.0,
+      Magnification: 0.5,
+      WorkingDistance_mm: 100,
+      FieldDepth_mm: 5.0,
+    }
+    const result = componentSchema.safeParse(invalidLens)
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects legacy "FixedFocalLengthLens" componentType', () => {
+    const invalidLens = {
+      ...createBaseComponent(),
+      componentType: 'FixedFocalLengthLens', // Legacy incorrect value
+      LensType: 'FixedFocalLength',
+      Mount: 'C',
+      MaxSensorSize_mm: 16.0,
+      ApertureMin_fnum: 1.4,
+      ApertureMax_fnum: 16.0,
+      FocalLength_mm: 25,
+      WorkingDistanceMin_mm: 200,
+    }
+    const result = componentSchema.safeParse(invalidLens)
+    expect(result.success).toBe(false)
+  })
+})
+
+// =============================================================================
 // Components Import Schema Tests
 // =============================================================================
 

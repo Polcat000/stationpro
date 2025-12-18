@@ -275,5 +275,69 @@ describe('Type Labels', () => {
   })
 })
 
+// Story 3.12: Virtualization tests
+describe('Virtualization (Story 3.12)', () => {
+  // Generate large dataset for virtualization testing
+  function generateLargeDataset(count: number): Component[] {
+    return Array.from({ length: count }, (_, i): LaserLineProfiler => ({
+      componentId: `LMI-TEST-${String(i + 1).padStart(4, '0')}`,
+      componentType: 'LaserLineProfiler',
+      Manufacturer: `Manufacturer-${i % 10}`,
+      Model: `Model-${i}`,
+      PartNumber: `PN-${i}`,
+      NearFieldLateralFOV_mm: 50 + i,
+      MidFieldLateralFOV_mm: 75 + i,
+      FarFieldLateralFOV_mm: 100 + i,
+      StandoffDistance_mm: 200,
+      MeasurementRange_mm: 150,
+      PointsPerProfile: 2048,
+      LateralResolution_um: 25,
+      VerticalResolution_um: 5,
+      MaxScanRate_kHz: 10,
+    }))
+  }
+
+  it('renders virtualized container with data-testid', () => {
+    const onRowClick = vi.fn()
+    render(<TestWrapper components={mockComponents} onRowClick={onRowClick} />)
+
+    const container = screen.getByTestId('components-data-grid')
+    expect(container).toBeInTheDocument()
+  })
+
+  it('renders fewer DOM rows than total data count for large datasets', () => {
+    const onRowClick = vi.fn()
+    const largeDataset = generateLargeDataset(100)
+    render(<TestWrapper components={largeDataset} onRowClick={onRowClick} />)
+
+    // With virtualization, only visible rows + overscan should be rendered
+    // Container height is 600px (mocked), row height is 41px
+    // ~14 visible + 5 overscan each direction = ~24 rows max
+    const dataRows = screen.getAllByRole('row').filter(
+      (row) => row.getAttribute('data-virtualized-row') !== null
+    )
+
+    // Should render significantly fewer rows than total count
+    expect(dataRows.length).toBeLessThan(largeDataset.length)
+    // Should render at least some rows (the visible ones)
+    expect(dataRows.length).toBeGreaterThan(0)
+  })
+
+  it('preserves row click functionality with virtualization', async () => {
+    const user = userEvent.setup()
+    const onRowClick = vi.fn()
+    const largeDataset = generateLargeDataset(50)
+    render(<TestWrapper components={largeDataset} onRowClick={onRowClick} />)
+
+    // Find first virtualized row and click it
+    const dataRows = screen.getAllByRole('row').filter(
+      (row) => row.getAttribute('data-virtualized-row') !== null
+    )
+    await user.click(dataRows[0])
+
+    expect(onRowClick).toHaveBeenCalled()
+  })
+})
+
 // Note: formatKeySpecs was removed in favor of individual spec columns
 // Users can now toggle visibility of individual spec columns via the column config dropdown
