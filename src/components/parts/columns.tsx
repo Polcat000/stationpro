@@ -81,6 +81,14 @@ export const columns: ColumnDef<Part>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: 'PartFamily',
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Family" />
+    ),
+    filterFn: multiSelectFilter,
+    cell: ({ row }) => row.getValue('PartFamily') || '-',
+  },
+  {
     accessorKey: 'PartSeries',
     header: ({ column }) => (
       <div className="min-w-[300px] pl-14">

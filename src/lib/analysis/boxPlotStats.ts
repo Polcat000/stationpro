@@ -68,6 +68,17 @@ export interface BoxPlotSeriesStats extends BoxPlotStats {
 }
 
 /**
+ * Box plot statistics for a family, including family identification.
+ * AC-3.16.2: One box per family with series count.
+ */
+export interface BoxPlotFamilyStats extends BoxPlotStats {
+  /** Family name for grouping */
+  familyName: string
+  /** Number of unique series in this family */
+  seriesCount: number
+}
+
+/**
  * Dimension identifier for Part dimension access.
  */
 export type Dimension = 'width' | 'height' | 'length'
@@ -324,4 +335,65 @@ export function calculateAllSeriesBoxPlotStats(
 
   // Sort by series name for consistent ordering
   return results.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
+}
+
+/**
+ * Calculates box plot statistics for all families in a parts array.
+ * Groups parts by PartFamily and calculates stats for each group.
+ * Per AC-3.16.2: Family-level stats with seriesCount.
+ * Per AC-3.16.7: Parts without PartFamily grouped under "Unassigned".
+ *
+ * @param parts - Array of parts from multiple families
+ * @param dimension - Which dimension to calculate stats for
+ * @returns Array of box plot stats, one per family, sorted by family name
+ *
+ * @example
+ * const allStats = calculateAllFamilyBoxPlotStats(workingSetParts, 'width')
+ * // Returns: [
+ * //   { familyName: 'SEAX', seriesCount: 3, median: 15.2, ... },
+ * //   { familyName: 'Unassigned', seriesCount: 2, median: 18.7, ... },
+ * // ]
+ */
+export function calculateAllFamilyBoxPlotStats(
+  parts: Part[],
+  dimension: Dimension
+): BoxPlotFamilyStats[] {
+  if (parts.length === 0) return []
+
+  // Group parts by family
+  const familyGroups = new Map<string, Part[]>()
+  for (const part of parts) {
+    const familyName = part.PartFamily || 'Unassigned'
+    if (!familyGroups.has(familyName)) {
+      familyGroups.set(familyName, [])
+    }
+    familyGroups.get(familyName)!.push(part)
+  }
+
+  // Calculate stats for each family
+  const results: BoxPlotFamilyStats[] = []
+  for (const [familyName, familyParts] of familyGroups) {
+    // Count unique series in this family
+    const seriesNames = new Set<string>()
+    for (const part of familyParts) {
+      seriesNames.add(part.PartSeries || 'Uncategorized')
+    }
+
+    // Convert parts to value array with identification
+    const values = familyParts.map((part) => ({
+      value: getDimensionValue(part, dimension),
+      partId: part.PartCallout,
+      partCallout: part.PartCallout,
+    }))
+
+    const stats = calculateBoxPlotStats(values)
+    results.push({
+      ...stats,
+      familyName,
+      seriesCount: seriesNames.size,
+    })
+  }
+
+  // Sort by family name for consistent ordering
+  return results.sort((a, b) => a.familyName.localeCompare(b.familyName))
 }

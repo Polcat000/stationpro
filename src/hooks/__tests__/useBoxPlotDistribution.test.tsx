@@ -31,11 +31,13 @@ function createTestPart(
   series: string,
   width: number,
   height: number = 50,
-  length: number = 100
+  length: number = 100,
+  family?: string
 ): Part {
   return {
     PartCallout: callout,
     PartSeries: series,
+    PartFamily: family,
     PartWidth_mm: width,
     PartHeight_mm: height,
     PartLength_mm: length,
@@ -413,6 +415,190 @@ describe('useBoxPlotDistribution', () => {
 
       expect(result.current.partCount).toBe(250)
       expect(result.current.widthData.seriesStats).toHaveLength(50)
+    })
+  })
+
+  describe('familyName filter parameter (AC-3.16.4)', () => {
+    it('returns all series when familyName is null', async () => {
+      const parts = [
+        createTestPart('P1', 'Series A', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Series B', 20, 50, 100, 'FamilyY'),
+        createTestPart('P3', 'Series C', 30, 50, 100, 'FamilyZ'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution(null), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.seriesCount).toBe(3)
+      })
+
+      expect(result.current.partCount).toBe(3)
+    })
+
+    it('returns all series when familyName is undefined', async () => {
+      const parts = [
+        createTestPart('P1', 'Series A', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Series B', 20, 50, 100, 'FamilyY'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution(undefined), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.seriesCount).toBe(2)
+      })
+
+      expect(result.current.partCount).toBe(2)
+    })
+
+    it('filters to series within specified family', async () => {
+      const parts = [
+        createTestPart('X1', 'Series A', 10, 50, 100, 'FamilyX'),
+        createTestPart('X2', 'Series B', 12, 50, 100, 'FamilyX'),
+        createTestPart('Y1', 'Series C', 20, 50, 100, 'FamilyY'),
+        createTestPart('Y2', 'Series D', 22, 50, 100, 'FamilyY'),
+        createTestPart('Z1', 'Series E', 30, 50, 100, 'FamilyZ'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution('FamilyX'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.seriesCount).toBe(2)
+      })
+
+      expect(result.current.partCount).toBe(2)
+      expect(result.current.seriesNames).toEqual(['Series A', 'Series B'])
+    })
+
+    it('returns only data for filtered family', async () => {
+      const parts = [
+        createTestPart('X1', 'Series A', 100, 50, 100, 'FamilyX'),
+        createTestPart('Y1', 'Series B', 200, 50, 100, 'FamilyY'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution('FamilyX'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.widthData.data.length).toBe(1)
+      })
+
+      // Only FamilyX part should be in data
+      expect(result.current.widthData.data[0].value).toBe(100)
+      expect(result.current.widthData.data[0].partCallout).toBe('X1')
+    })
+
+    it('filters "Unassigned" family correctly', async () => {
+      const parts = [
+        createTestPart('NAMED', 'Series A', 10, 50, 100, 'FamilyX'),
+        { ...createTestPart('UNASSIGNED-1', 'Series B', 20), PartFamily: undefined },
+        { ...createTestPart('UNASSIGNED-2', 'Series C', 25), PartFamily: undefined },
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution('Unassigned'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.partCount).toBe(2)
+      })
+
+      expect(result.current.seriesNames).toEqual(['Series B', 'Series C'])
+    })
+
+    it('returns empty when familyName does not match any parts', async () => {
+      const parts = [
+        createTestPart('P1', 'Series A', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Series B', 20, 50, 100, 'FamilyY'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      const { result } = renderHook(() => useBoxPlotDistribution('NonExistentFamily'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.partCount).toBe(0)
+      })
+
+      expect(result.current.seriesCount).toBe(0)
+      expect(result.current.widthData.data).toEqual([])
+    })
+
+    it('calculates series stats only for filtered parts', async () => {
+      const parts = [
+        // FamilyX with outlier
+        ...Array.from({ length: 9 }, (_, i) =>
+          createTestPart(`X${i}`, 'Series X', 10, 50, 100, 'FamilyX')
+        ),
+        createTestPart('X-OUT', 'Series X', 100, 50, 100, 'FamilyX'),
+        // FamilyY without outlier
+        createTestPart('Y1', 'Series Y', 20, 50, 100, 'FamilyY'),
+        createTestPart('Y2', 'Series Y', 21, 50, 100, 'FamilyY'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      parts.forEach((p) => useWorkingSetStore.getState().togglePart(p.PartCallout))
+
+      // Filter to FamilyY only - should have no outliers
+      const { result } = renderHook(() => useBoxPlotDistribution('FamilyY'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.widthData.seriesStats.length).toBeGreaterThan(0)
+      })
+
+      expect(result.current.widthData.seriesStats).toHaveLength(1)
+      expect(result.current.widthData.seriesStats[0].seriesName).toBe('Series Y')
+      expect(result.current.widthData.seriesStats[0].outliers).toHaveLength(0)
+    })
+
+    it('respects both working set and family filter', async () => {
+      const parts = [
+        createTestPart('X1', 'Series A', 10, 50, 100, 'FamilyX'),
+        createTestPart('X2', 'Series B', 12, 50, 100, 'FamilyX'),
+        createTestPart('Y1', 'Series C', 20, 50, 100, 'FamilyY'),
+      ]
+      const wrapper = createWrapper(parts)
+
+      // Only add X1 and Y1 to working set (not X2)
+      useWorkingSetStore.getState().togglePart('X1')
+      useWorkingSetStore.getState().togglePart('Y1')
+
+      const { result } = renderHook(() => useBoxPlotDistribution('FamilyX'), {
+        wrapper,
+      })
+
+      await waitFor(() => {
+        expect(result.current.partCount).toBe(1)
+      })
+
+      // Only X1 is in both working set AND FamilyX
+      expect(result.current.seriesNames).toEqual(['Series A'])
     })
   })
 })

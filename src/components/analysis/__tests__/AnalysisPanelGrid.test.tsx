@@ -1,6 +1,7 @@
 // src/components/analysis/__tests__/AnalysisPanelGrid.test.tsx
 // Tests for AnalysisPanelGrid component
-// AC-3.10.1: All four panels collapsible
+// AC-3.10.1: All panels collapsible
+// AC-3.17.1-8: UnifiedStatsEnvelopePanel replaces separate stats/envelope panels
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
@@ -10,6 +11,7 @@ import { AnalysisPanelGrid } from '../AnalysisPanelGrid'
 import { useWorkingSetStore } from '@/stores/workingSet'
 
 const STORAGE_KEY = 'stationpro-analysis-panels'
+const UNIFIED_PANEL_ID = 'unified-stats-envelope'
 
 // Mock parts repository
 vi.mock('@/lib/repositories/partsRepository', () => ({
@@ -39,11 +41,11 @@ describe('AnalysisPanelGrid', () => {
       expect(await screen.findByTestId('analysis-panel-grid')).toBeInTheDocument()
     })
 
-    it('renders all four panel titles', async () => {
+    it('renders all three panel titles (AC-3.17.1-8)', async () => {
       renderWithRouter(<AnalysisPanelGrid />)
 
-      expect(await screen.findByText('Aggregate Statistics')).toBeInTheDocument()
-      expect(screen.getByText('Worst-Case Envelope')).toBeInTheDocument()
+      // UnifiedStatsEnvelopePanel replaced AggregateStats + Envelope
+      expect(await screen.findByText('Working Set Summary')).toBeInTheDocument()
       expect(screen.getByText('Dimensional Distribution')).toBeInTheDocument()
       expect(screen.getByText('Inspection Zone Summary')).toBeInTheDocument()
     })
@@ -62,11 +64,9 @@ describe('AnalysisPanelGrid', () => {
     it('all panels are expandable/collapsible', async () => {
       renderWithRouter(<AnalysisPanelGrid />)
 
-      // Find all collapse buttons
+      // Find all collapse buttons - should have 3 (one per panel)
       const buttons = await screen.findAllByRole('button')
-
-      // Should have 4 buttons (one per panel)
-      expect(buttons.length).toBeGreaterThanOrEqual(4)
+      expect(buttons.length).toBeGreaterThanOrEqual(3)
     })
 
     it('clicking panel header toggles content visibility', async () => {
@@ -74,14 +74,14 @@ describe('AnalysisPanelGrid', () => {
 
       renderWithRouter(<AnalysisPanelGrid />)
 
-      // Click "Aggregate Statistics" header to collapse
-      const statsHeader = await screen.findByText('Aggregate Statistics')
-      await user.click(statsHeader)
+      // Click "Working Set Summary" header to collapse
+      const unifiedHeader = await screen.findByText('Working Set Summary')
+      await user.click(unifiedHeader)
 
       // The panel content should be collapsed
       await waitFor(() => {
-        const statsButton = statsHeader.closest('[role="button"]')
-        expect(statsButton).toHaveAttribute('aria-expanded', 'false')
+        const unifiedButton = unifiedHeader.closest('[role="button"]')
+        expect(unifiedButton).toHaveAttribute('aria-expanded', 'false')
       })
     })
   })
@@ -92,39 +92,42 @@ describe('AnalysisPanelGrid', () => {
 
       renderWithRouter(<AnalysisPanelGrid />)
 
-      // Collapse "Aggregate Statistics"
-      const statsHeader = await screen.findByText('Aggregate Statistics')
-      await user.click(statsHeader)
+      // Collapse "Working Set Summary"
+      const unifiedHeader = await screen.findByText('Working Set Summary')
+      await user.click(unifiedHeader)
 
       await waitFor(() => {
-        const statsButton = statsHeader.closest('[role="button"]')
-        expect(statsButton).toHaveAttribute('aria-expanded', 'false')
+        const unifiedButton = unifiedHeader.closest('[role="button"]')
+        expect(unifiedButton).toHaveAttribute('aria-expanded', 'false')
       })
 
-      // "Worst-Case Envelope" should still be expanded
-      const envelopeHeader = screen.getByText('Worst-Case Envelope')
-      const envelopeButton = envelopeHeader.closest('[role="button"]')
-      expect(envelopeButton).toHaveAttribute('aria-expanded', 'true')
+      // "Dimensional Distribution" should still be expanded
+      const chartsHeader = screen.getByText('Dimensional Distribution')
+      const chartsButton = chartsHeader.closest('[role="button"]')
+      expect(chartsButton).toHaveAttribute('aria-expanded', 'true')
     })
   })
 
   describe('state persistence', () => {
     it('restores panel states from localStorage', async () => {
-      // Set initial state with stats collapsed
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ stats: false }))
+      // Set initial state with unified panel collapsed
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ [UNIFIED_PANEL_ID]: false })
+      )
 
       renderWithRouter(<AnalysisPanelGrid />)
 
       await waitFor(() => {
-        const statsHeader = screen.getByText('Aggregate Statistics')
-        const statsButton = statsHeader.closest('[role="button"]')
-        expect(statsButton).toHaveAttribute('aria-expanded', 'false')
+        const unifiedHeader = screen.getByText('Working Set Summary')
+        const unifiedButton = unifiedHeader.closest('[role="button"]')
+        expect(unifiedButton).toHaveAttribute('aria-expanded', 'false')
       })
 
       // Other panels should be expanded (default)
-      const envelopeHeader = screen.getByText('Worst-Case Envelope')
-      const envelopeButton = envelopeHeader.closest('[role="button"]')
-      expect(envelopeButton).toHaveAttribute('aria-expanded', 'true')
+      const chartsHeader = screen.getByText('Dimensional Distribution')
+      const chartsButton = chartsHeader.closest('[role="button"]')
+      expect(chartsButton).toHaveAttribute('aria-expanded', 'true')
     })
 
     it('persists collapse state to localStorage', async () => {
@@ -132,15 +135,15 @@ describe('AnalysisPanelGrid', () => {
 
       renderWithRouter(<AnalysisPanelGrid />)
 
-      // Collapse "Aggregate Statistics"
-      const statsHeader = await screen.findByText('Aggregate Statistics')
-      await user.click(statsHeader)
+      // Collapse "Working Set Summary"
+      const unifiedHeader = await screen.findByText('Working Set Summary')
+      await user.click(unifiedHeader)
 
       // Wait for debounce
       vi.advanceTimersByTime(100)
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      expect(stored.stats).toBe(false)
+      expect(stored[UNIFIED_PANEL_ID]).toBe(false)
     })
   })
 })

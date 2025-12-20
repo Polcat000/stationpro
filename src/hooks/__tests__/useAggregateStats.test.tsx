@@ -162,7 +162,7 @@ describe('useAggregateStats', () => {
     })
   })
 
-  it('calculates all four dimensions (AC 3.5.2)', async () => {
+  it('calculates all five dimensions (AC 3.17.1)', async () => {
     useWorkingSetStore.setState({
       partIds: new Set(['PART-001', 'PART-002']),
       stationIds: new Set<string>(),
@@ -177,15 +177,19 @@ describe('useAggregateStats', () => {
       expect(stats).toHaveProperty('width')
       expect(stats).toHaveProperty('height')
       expect(stats).toHaveProperty('length')
-      expect(stats).toHaveProperty('smallestFeature')
+      expect(stats).toHaveProperty('smallestLateralFeature')
+      expect(stats).toHaveProperty('smallestDepthFeature')
 
-      // Verify each has all required fields
+      // Verify each dimension has all required fields
       expect(stats.width).toHaveProperty('count')
       expect(stats.width).toHaveProperty('min')
       expect(stats.width).toHaveProperty('max')
       expect(stats.width).toHaveProperty('mean')
       expect(stats.width).toHaveProperty('median')
       expect(stats.width).toHaveProperty('stdDev')
+
+      // smallestDepthFeature is null when no parts have depth data
+      expect(stats.smallestDepthFeature).toBeNull()
     })
   })
 

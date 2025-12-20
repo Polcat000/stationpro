@@ -39,6 +39,7 @@ export interface InspectionZone {
 export interface Part {
   PartCallout: string
   PartSeries?: string
+  PartFamily?: string
   PartWidth_mm: number
   PartHeight_mm: number
   PartLength_mm: number

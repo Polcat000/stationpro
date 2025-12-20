@@ -59,7 +59,8 @@ class MockWorker {
                 width: { count: payload.parts.length, min: 0, max: 100, mean: 50, median: 50, stdDev: 25 },
                 height: { count: payload.parts.length, min: 0, max: 100, mean: 50, median: 50, stdDev: 25 },
                 length: { count: payload.parts.length, min: 0, max: 100, mean: 50, median: 50, stdDev: 25 },
-                smallestFeature: { count: payload.parts.length, min: 0, max: 100, mean: 50, median: 50, stdDev: 25 },
+                smallestLateralFeature: { count: payload.parts.length, min: 0, max: 100, mean: 50, median: 50, stdDev: 25 },
+                smallestDepthFeature: null, // No depth feature data in mock
               },
             },
           }

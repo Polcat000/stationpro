@@ -19,6 +19,7 @@ import { VirtualizedTable, ROW_HEIGHTS } from '@/components/ui/VirtualizedTable'
 import { cn } from '@/lib/utils'
 import { columns } from './columns'
 import { SeriesGroupHeader } from './SeriesGroupHeader'
+import { FamilyGroupHeader } from './FamilyGroupHeader'
 
 export interface PartsDataGridProps {
   table: TanStackTable<Part>
@@ -67,22 +68,47 @@ export function PartsDataGrid({ table, onRowClick }: PartsDataGridProps) {
   // Render individual row (grouped or data)
   const renderRow = React.useCallback(
     (row: Row<Part>) => {
-      // Grouped row (series header)
+      // Grouped row - detect depth for family vs series
       if (row.getIsGrouped()) {
-        const seriesName = row.getValue('PartSeries') as string
+        const depth = row.depth
         const leafRows = row.getLeafRows()
-        const partIdsInSeries = leafRows.map((r) => r.original.PartCallout)
+        const partIds = leafRows.map((r) => r.original.PartCallout)
+
+        // Depth 0: Family-level grouping
+        if (depth === 0) {
+          const familyName = row.getValue('PartFamily') as string
+
+          return (
+            <TableRow
+              key={row.id}
+              className="bg-muted/40 hover:bg-muted/50"
+              data-virtualized-row
+            >
+              <TableCell colSpan={columns.length}>
+                <FamilyGroupHeader
+                  familyName={familyName}
+                  partIdsInFamily={partIds}
+                  isExpanded={row.getIsExpanded()}
+                  onToggleExpand={() => row.toggleExpanded()}
+                />
+              </TableCell>
+            </TableRow>
+          )
+        }
+
+        // Depth 1: Series-level grouping (or single-level series grouping)
+        const seriesName = row.getValue('PartSeries') as string
 
         return (
           <TableRow
             key={row.id}
-            className="bg-muted/50 hover:bg-muted"
+            className="bg-muted/60 hover:bg-muted/70"
             data-virtualized-row
           >
             <TableCell colSpan={columns.length}>
               <SeriesGroupHeader
                 seriesName={seriesName}
-                partIdsInSeries={partIdsInSeries}
+                partIdsInSeries={partIds}
                 isExpanded={row.getIsExpanded()}
                 onToggleExpand={() => row.toggleExpanded()}
               />
