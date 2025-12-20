@@ -81,8 +81,8 @@ interface OutlierLayerProps<RawDatum extends BoxPlotDatum>
 
 /**
  * Custom Nivo layer for rendering IQR-based outlier dots.
- * Nivo's built-in whiskers use quantile positions, not 1.5xIQR.
- * We render our own outlier dots using pre-computed stats from boxPlotStats.ts.
+ * Nivo's built-in whiskers use quantile positions (we configure to 0th/100th percentile).
+ * We render our own outlier dots using pre-computed 1.5×IQR stats from boxPlotStats.ts.
  */
 function OutlierLayer<RawDatum extends BoxPlotDatum>({
   boxPlots,
@@ -335,6 +335,10 @@ export function BoxPlotChart({
       maxValue="auto"
       padding={0.3}
       innerPadding={0.1}
+      // Use min/max for whiskers (0th and 100th percentile) instead of Nivo's default 10th/90th
+      // This aligns with our 1.5×IQR outlier detection where whiskers extend to actual min/max
+      // when no outliers exist. Our custom OutlierLayer handles rendering outlier dots.
+      quantiles={[0, 0.25, 0.5, 0.75, 1]}
       margin={{ top: 20, right: 20, bottom: 60, left: 70 }}
       colors={(datum) => seriesColorMap.get(datum.group) || `oklch(${COLOR_SCALE.lightnessMax} ${COLOR_SCALE.chroma} ${COLOR_SCALE.hue})`}
       colorBy="group"

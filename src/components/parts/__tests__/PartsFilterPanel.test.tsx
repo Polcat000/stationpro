@@ -11,6 +11,7 @@ import type { PartFilters } from '../PartsLibraryPage'
 const defaultFilters: PartFilters = {
   callout: '',
   series: [],
+  family: [],
   widthRange: [null, null],
   heightRange: [null, null],
   lengthRange: [null, null],
@@ -31,6 +32,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -50,6 +52,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -69,6 +72,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -89,6 +93,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -111,6 +116,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -131,6 +137,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -155,6 +162,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -181,6 +189,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -203,6 +212,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -226,6 +236,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -250,6 +261,7 @@ describe('PartsFilterPanel', () => {
           filters={filtersWithSeries}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B', 'Series-C']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -277,6 +289,7 @@ describe('PartsFilterPanel', () => {
           filters={filtersWithSeries}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -303,6 +316,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={['Series-A', 'Series-B']}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -324,6 +338,7 @@ describe('PartsFilterPanel', () => {
           filters={defaultFilters}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )
@@ -353,6 +368,7 @@ describe('PartsFilterPanel', () => {
           filters={filtersWithRange}
           onFiltersChange={onFiltersChange}
           uniqueSeries={[]}
+          uniqueFamilies={[]}
           onClearAll={onClearAll}
         />
       )

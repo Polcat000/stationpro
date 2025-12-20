@@ -36,8 +36,8 @@ export interface CollapsiblePanelProps {
  * - Restored on load (AC-3.10.4)
  *
  * @example
- * <CollapsiblePanel panelId="stats" title="Aggregate Statistics">
- *   <AggregateStatsPanelContent />
+ * <CollapsiblePanel panelId="charts" title="Dimensional Distribution">
+ *   <DistributionChartsPanelContent />
  * </CollapsiblePanel>
  */
 export function CollapsiblePanel({

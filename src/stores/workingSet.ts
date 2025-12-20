@@ -7,6 +7,7 @@ export interface WorkingSetState {
   togglePart: (id: string) => void
   toggleStation: (id: string) => void
   toggleSeries: (seriesName: string, partIdsInSeries: string[]) => void
+  toggleFamily: (familyName: string, partIdsInFamily: string[]) => void
   addAllFiltered: (partIds: string[]) => void
   clearParts: () => void
   clearStations: () => void
@@ -69,6 +70,22 @@ export const useWorkingSetStore = create<WorkingSetState>()(
           } else {
             // Some or none selected → add all
             partIdsInSeries.forEach((id) => newPartIds.add(id))
+          }
+
+          return { partIds: newPartIds }
+        }),
+
+      toggleFamily: (_familyName: string, partIdsInFamily: string[]) =>
+        set((state) => {
+          const allInSet = partIdsInFamily.every((id) => state.partIds.has(id))
+          const newPartIds = new Set(state.partIds)
+
+          if (allInSet) {
+            // All selected → remove all
+            partIdsInFamily.forEach((id) => newPartIds.delete(id))
+          } else {
+            // Some or none selected → add all
+            partIdsInFamily.forEach((id) => newPartIds.add(id))
           }
 
           return { partIds: newPartIds }

@@ -129,7 +129,11 @@ function createDimensionData(
  *
  * Per AC-3.7a.1: Provides data for box plot rendering with one box per series.
  * Per AC-3.7a.3: seriesCount can be used to determine single-series vs multi-series view.
+ * Per AC-3.16.4: Optional familyName parameter filters to series within that family.
  *
+ * @param familyName - Optional family name to filter parts. When provided, only
+ *                     series within that family are included. Use "Unassigned"
+ *                     for parts without a PartFamily.
  * @returns Object with box plot data per dimension, series info, and state flags
  *
  * @example
@@ -159,17 +163,30 @@ function createDimensionData(
  *     </>
  *   )
  * }
+ *
+ * @example
+ * // Drill-down to family: show series within SEAX family
+ * const { widthData } = useBoxPlotDistribution('SEAX')
  */
-export function useBoxPlotDistribution(): BoxPlotDistributionResult {
+export function useBoxPlotDistribution(
+  familyName?: string | null
+): BoxPlotDistributionResult {
   const { data: allParts, isLoading } = useQuery(partsQueryOptions)
   const partIds = useWorkingSetStore((state) => state.partIds)
 
-  // Filter parts to only those in working set
+  // Filter parts to only those in working set, then optionally by family
   const selectedParts = useMemo(() => {
     if (!allParts || partIds.size === 0) return []
     // Working set uses PartCallout as identifier (per project convention)
-    return allParts.filter((p) => partIds.has(p.PartCallout))
-  }, [allParts, partIds])
+    let filtered = allParts.filter((p) => partIds.has(p.PartCallout))
+    // AC-3.16.4: Filter by family when familyName is provided
+    if (familyName) {
+      filtered = filtered.filter(
+        (p) => (p.PartFamily || 'Unassigned') === familyName
+      )
+    }
+    return filtered
+  }, [allParts, partIds, familyName])
 
   // Extract unique series names (sorted for consistent ordering)
   const seriesNames = useMemo(() => {

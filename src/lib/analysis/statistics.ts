@@ -21,7 +21,9 @@ export interface AggregateStatistics {
   width: DimensionStats
   height: DimensionStats
   length: DimensionStats
-  smallestFeature: DimensionStats
+  smallestLateralFeature: DimensionStats
+  /** null when no parts in the working set have SmallestDepthFeature_um */
+  smallestDepthFeature: DimensionStats | null
 }
 
 // =============================================================================
@@ -83,16 +85,27 @@ export function calculateDimensionStats(values: number[]): DimensionStats {
 }
 
 /**
- * Calculates aggregate statistics for all four dimensions of a parts array.
- * Dimensions: Width, Height, Length, SmallestFeature
+ * Calculates aggregate statistics for all five dimensions of a parts array.
+ * Dimensions: Width, Height, Length, SmallestLateralFeature, SmallestDepthFeature
+ *
+ * SmallestDepthFeature is optional on Part, so returns null if no parts have it.
  */
 export function calculateAggregateStats(parts: Part[]): AggregateStatistics {
+  // Collect depth feature values only from parts that have them
+  const depthFeatureValues = parts
+    .filter((p) => p.SmallestDepthFeature_um !== undefined)
+    .map((p) => p.SmallestDepthFeature_um as number)
+
   return {
     width: calculateDimensionStats(parts.map((p) => p.PartWidth_mm)),
     height: calculateDimensionStats(parts.map((p) => p.PartHeight_mm)),
     length: calculateDimensionStats(parts.map((p) => p.PartLength_mm)),
-    smallestFeature: calculateDimensionStats(
+    smallestLateralFeature: calculateDimensionStats(
       parts.map((p) => p.SmallestLateralFeature_um)
     ),
+    smallestDepthFeature:
+      depthFeatureValues.length > 0
+        ? calculateDimensionStats(depthFeatureValues)
+        : null,
   }
 }

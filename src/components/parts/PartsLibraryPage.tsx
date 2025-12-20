@@ -54,6 +54,7 @@ function getInitialTab(): TabValue {
 export interface PartFilters {
   callout: string
   series: string[]
+  family: string[]
   widthRange: [number | null, number | null]
   heightRange: [number | null, number | null]
   lengthRange: [number | null, number | null]
@@ -63,6 +64,7 @@ export interface PartFilters {
 const defaultFilters: PartFilters = {
   callout: '',
   series: [],
+  family: [],
   widthRange: [null, null],
   heightRange: [null, null],
   lengthRange: [null, null],
@@ -73,6 +75,7 @@ function countActiveFilters(filters: PartFilters): number {
   let count = 0
   if (filters.callout) count++
   if (filters.series.length > 0) count++
+  if (filters.family.length > 0) count++
   if (filters.widthRange[0] !== null || filters.widthRange[1] !== null) count++
   if (filters.heightRange[0] !== null || filters.heightRange[1] !== null) count++
   if (filters.lengthRange[0] !== null || filters.lengthRange[1] !== null) count++
@@ -116,7 +119,7 @@ export function PartsLibraryPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [grouping, setGrouping] = useState<GroupingState>(['PartSeries'])
+  const [grouping, setGrouping] = useState<GroupingState>(['PartFamily', 'PartSeries'])
   const [expanded, setExpanded] = useState<ExpandedState>(true)
 
   // Load column visibility from localStorage
@@ -146,6 +149,9 @@ export function PartsLibraryPage() {
     if (filters.series.length > 0) {
       newFilters.push({ id: 'PartSeries', value: filters.series })
     }
+    if (filters.family.length > 0) {
+      newFilters.push({ id: 'PartFamily', value: filters.family })
+    }
     if (filters.widthRange[0] !== null || filters.widthRange[1] !== null) {
       newFilters.push({ id: 'PartWidth_mm', value: filters.widthRange })
     }
@@ -171,6 +177,17 @@ export function PartsLibraryPage() {
       }
     })
     return Array.from(seriesSet).sort()
+  }, [parts])
+
+  // Get unique family values for multi-select
+  const uniqueFamilies = useMemo(() => {
+    const familySet = new Set<string>()
+    parts.forEach((p) => {
+      if (p.PartFamily) {
+        familySet.add(p.PartFamily)
+      }
+    })
+    return Array.from(familySet).sort()
   }, [parts])
 
   // TanStack Table instance
@@ -348,6 +365,7 @@ export function PartsLibraryPage() {
             filters={filters}
             onFiltersChange={setFilters}
             uniqueSeries={uniqueSeries}
+            uniqueFamilies={uniqueFamilies}
             onClearAll={handleClearFilters}
           />
 

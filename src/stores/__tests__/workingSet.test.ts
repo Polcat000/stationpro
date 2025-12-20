@@ -184,6 +184,63 @@ describe('workingSetStore', () => {
     })
   })
 
+  describe('toggleFamily', () => {
+    it('adds all parts when none are in working set', () => {
+      const { toggleFamily } = useWorkingSetStore.getState()
+
+      toggleFamily('Connectors', ['p1', 'p2', 'p3'])
+
+      const { partIds } = useWorkingSetStore.getState()
+      expect(partIds.size).toBe(3)
+      expect(partIds.has('p1')).toBe(true)
+      expect(partIds.has('p2')).toBe(true)
+      expect(partIds.has('p3')).toBe(true)
+    })
+
+    it('removes all parts when all are in working set', () => {
+      useWorkingSetStore.setState({
+        partIds: new Set(['p1', 'p2', 'p3']),
+        stationIds: new Set<string>(),
+      })
+
+      const { toggleFamily } = useWorkingSetStore.getState()
+      toggleFamily('Connectors', ['p1', 'p2', 'p3'])
+
+      const { partIds } = useWorkingSetStore.getState()
+      expect(partIds.size).toBe(0)
+    })
+
+    it('adds all parts when some are in working set (OR logic)', () => {
+      useWorkingSetStore.setState({
+        partIds: new Set(['p1']),
+        stationIds: new Set<string>(),
+      })
+
+      const { toggleFamily } = useWorkingSetStore.getState()
+      toggleFamily('Connectors', ['p1', 'p2', 'p3'])
+
+      const { partIds } = useWorkingSetStore.getState()
+      expect(partIds.size).toBe(3)
+      expect(partIds.has('p1')).toBe(true)
+      expect(partIds.has('p2')).toBe(true)
+      expect(partIds.has('p3')).toBe(true)
+    })
+
+    it('does not affect parts outside the family', () => {
+      useWorkingSetStore.setState({
+        partIds: new Set(['other-part']),
+        stationIds: new Set<string>(),
+      })
+
+      const { toggleFamily } = useWorkingSetStore.getState()
+      toggleFamily('Connectors', ['p1', 'p2'])
+
+      const { partIds } = useWorkingSetStore.getState()
+      expect(partIds.size).toBe(3)
+      expect(partIds.has('other-part')).toBe(true)
+    })
+  })
+
   describe('addAllFiltered', () => {
     it('adds all provided part IDs to working set', () => {
       const { addAllFiltered } = useWorkingSetStore.getState()

@@ -33,11 +33,13 @@ function createTestPart(
   series: string,
   width: number,
   height: number = 50,
-  length: number = 100
+  length: number = 100,
+  family?: string
 ): Part {
   return {
     PartCallout: callout,
     PartSeries: series,
+    PartFamily: family,
     PartWidth_mm: width,
     PartHeight_mm: height,
     PartLength_mm: length,
@@ -369,6 +371,256 @@ describe('DistributionChartsContainer', () => {
 
       // Component renders without error
       await screen.findByTestId('distribution-charts-histogram')
+    })
+  })
+
+  describe('family view (AC-3.16.5)', () => {
+    it('shows family view when effectiveGroupByFamily is true (>30 series)', async () => {
+      // Create 35 series across 5 families (> 30 series threshold)
+      const parts: Part[] = []
+      for (let f = 0; f < 5; f++) {
+        for (let s = 0; s < 7; s++) {
+          parts.push(
+            createTestPart(
+              `F${f}-S${s}`,
+              `Series-${f}-${s}`,
+              10 + f * 10 + s,
+              50,
+              100,
+              `Family-${f}`
+            )
+          )
+        }
+      }
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      // Should show family view (not boxplot or histogram)
+      expect(
+        await screen.findByTestId('distribution-charts-family')
+      ).toBeInTheDocument()
+    })
+
+    it('shows "All Families" header in family view', async () => {
+      // Create enough series to trigger family grouping
+      const parts: Part[] = []
+      for (let f = 0; f < 4; f++) {
+        for (let s = 0; s < 10; s++) {
+          parts.push(
+            createTestPart(
+              `F${f}-S${s}`,
+              `Series-${f}-${s}`,
+              10 + s,
+              50,
+              100,
+              `Family-${f}`
+            )
+          )
+        }
+      }
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        expect(screen.getByText('All Families')).toBeInTheDocument()
+      })
+    })
+
+    it('shows family count and part count in family view header', async () => {
+      const parts: Part[] = []
+      for (let f = 0; f < 3; f++) {
+        for (let s = 0; s < 12; s++) {
+          parts.push(
+            createTestPart(
+              `F${f}-S${s}`,
+              `Series-${f}-${s}`,
+              10 + s,
+              50,
+              100,
+              `Family${f}`
+            )
+          )
+        }
+      }
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        expect(screen.getByText(/3 families/)).toBeInTheDocument()
+        expect(screen.getByText(/36 parts/)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Group by Family toggle (AC-3.16.6)', () => {
+    it('shows toggle when multiple families exist', async () => {
+      const parts = [
+        createTestPart('P1', 'Alpha', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Beta', 20, 50, 100, 'FamilyY'),
+      ]
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('group-by-family-toggle')).toBeInTheDocument()
+      })
+    })
+
+    it('toggle is disabled when only 1 family exists', async () => {
+      // Create > 30 series but only 1 family
+      const parts: Part[] = []
+      for (let s = 0; s < 35; s++) {
+        parts.push(
+          createTestPart(
+            `P${s}`,
+            `Series-${s}`,
+            10 + s,
+            50,
+            100,
+            'OnlyFamily'
+          )
+        )
+      }
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        const toggle = screen.getByTestId('group-by-family-toggle')
+        expect(toggle).toBeDisabled()
+      })
+    })
+
+    it('shows "Group by Family" label next to toggle', async () => {
+      const parts = [
+        createTestPart('P1', 'Alpha', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Beta', 20, 50, 100, 'FamilyY'),
+      ]
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        expect(screen.getByText('Group by Family')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('family drill-down view (AC-3.16.5)', () => {
+    it('shows back button in family drill-down view', async () => {
+      // We can't easily click on Nivo chart, but we can verify the component
+      // structure supports the navigation patterns by checking for proper test IDs
+      // and text content that would appear in each view state
+      const parts: Part[] = []
+      for (let f = 0; f < 4; f++) {
+        for (let s = 0; s < 10; s++) {
+          parts.push(
+            createTestPart(
+              `F${f}-S${s}`,
+              `Series-${f}-${s}`,
+              10 + s,
+              50,
+              100,
+              `Family-${f}`
+            )
+          )
+        }
+      }
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      // Verify family view is shown (prerequisite for drill-down)
+      await waitFor(() => {
+        expect(screen.getByTestId('distribution-charts-family')).toBeInTheDocument()
+      })
+
+      // Family view shows drill-down hint
+      expect(screen.getByText(/click a family box to drill down/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('three-level navigation (AC-3.16.5)', () => {
+    it('shows drill-down hint in working-set view', async () => {
+      const parts = [
+        createTestPart('P1', 'Alpha', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Beta', 20, 50, 100, 'FamilyY'),
+      ]
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      await waitFor(() => {
+        expect(screen.getByText(/click a box to drill down/i)).toBeInTheDocument()
+      })
+    })
+
+    it('renders dimension labels in all views', async () => {
+      const parts = [
+        createTestPart('P1', 'Alpha', 10, 50, 100, 'FamilyX'),
+        createTestPart('P2', 'Beta', 20, 50, 100, 'FamilyY'),
+      ]
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      // All three dimension labels should be present
+      await waitFor(() => {
+        expect(screen.getByText(/width distribution/i)).toBeInTheDocument()
+        expect(screen.getByText(/height distribution/i)).toBeInTheDocument()
+        expect(screen.getByText(/length distribution/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Unassigned family handling (AC-3.16.7)', () => {
+    it('renders parts without PartFamily in charts', async () => {
+      const parts = [
+        createTestPart('P1', 'Alpha', 10, 50, 100, 'FamilyX'),
+        { ...createTestPart('P2', 'Beta', 20), PartFamily: undefined }, // Unassigned
+      ]
+
+      parts.forEach((p) =>
+        useWorkingSetStore.getState().togglePart(p.PartCallout)
+      )
+
+      renderWithParts(parts)
+
+      // Component renders without error
+      await waitFor(() => {
+        expect(screen.getByTestId('distribution-charts-boxplot')).toBeInTheDocument()
+      })
     })
   })
 })

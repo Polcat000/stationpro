@@ -221,19 +221,21 @@ describe('calculateDimensionStats', () => {
 // =============================================================================
 
 describe('calculateAggregateStats', () => {
-  it('returns stats for all four dimensions (AC 3.5.2)', () => {
+  it('returns stats for all five dimensions (AC 3.17.1)', () => {
     const parts = [
       createTestPart({
         PartWidth_mm: 10,
         PartHeight_mm: 5,
         PartLength_mm: 20,
         SmallestLateralFeature_um: 100,
+        SmallestDepthFeature_um: 50,
       }),
       createTestPart({
         PartWidth_mm: 20,
         PartHeight_mm: 10,
         PartLength_mm: 40,
         SmallestLateralFeature_um: 200,
+        SmallestDepthFeature_um: 100,
       }),
     ]
     const stats = calculateAggregateStats(parts)
@@ -256,11 +258,65 @@ describe('calculateAggregateStats', () => {
     expect(stats.length.max).toBe(40)
     expect(stats.length.mean).toBe(30)
 
-    // SmallestFeature
-    expect(stats.smallestFeature.count).toBe(2)
-    expect(stats.smallestFeature.min).toBe(100)
-    expect(stats.smallestFeature.max).toBe(200)
-    expect(stats.smallestFeature.mean).toBe(150)
+    // SmallestLateralFeature
+    expect(stats.smallestLateralFeature.count).toBe(2)
+    expect(stats.smallestLateralFeature.min).toBe(100)
+    expect(stats.smallestLateralFeature.max).toBe(200)
+    expect(stats.smallestLateralFeature.mean).toBe(150)
+
+    // SmallestDepthFeature
+    expect(stats.smallestDepthFeature).not.toBeNull()
+    expect(stats.smallestDepthFeature!.count).toBe(2)
+    expect(stats.smallestDepthFeature!.min).toBe(50)
+    expect(stats.smallestDepthFeature!.max).toBe(100)
+    expect(stats.smallestDepthFeature!.mean).toBe(75)
+  })
+
+  it('returns null for smallestDepthFeature when no parts have it (AC 3.17.2)', () => {
+    const parts = [
+      createTestPart({
+        PartWidth_mm: 10,
+        SmallestLateralFeature_um: 100,
+        // No SmallestDepthFeature_um
+      }),
+      createTestPart({
+        PartWidth_mm: 20,
+        SmallestLateralFeature_um: 200,
+        // No SmallestDepthFeature_um
+      }),
+    ]
+    const stats = calculateAggregateStats(parts)
+
+    expect(stats.smallestLateralFeature.count).toBe(2)
+    expect(stats.smallestDepthFeature).toBeNull()
+  })
+
+  it('calculates depth feature stats only for parts that have it', () => {
+    const parts = [
+      createTestPart({
+        SmallestLateralFeature_um: 100,
+        SmallestDepthFeature_um: 50,
+      }),
+      createTestPart({
+        SmallestLateralFeature_um: 200,
+        // No depth feature
+      }),
+      createTestPart({
+        SmallestLateralFeature_um: 150,
+        SmallestDepthFeature_um: 75,
+      }),
+    ]
+    const stats = calculateAggregateStats(parts)
+
+    // Lateral includes all 3 parts
+    expect(stats.smallestLateralFeature.count).toBe(3)
+
+    // Depth only includes 2 parts with depth data
+    expect(stats.smallestDepthFeature).not.toBeNull()
+    expect(stats.smallestDepthFeature!.count).toBe(2)
+    expect(stats.smallestDepthFeature!.min).toBe(50)
+    expect(stats.smallestDepthFeature!.max).toBe(75)
+    expect(stats.smallestDepthFeature!.mean).toBe(62.5)
   })
 
   it('handles empty parts array (AC 3.5.4)', () => {
@@ -268,7 +324,8 @@ describe('calculateAggregateStats', () => {
     expect(stats.width.count).toBe(0)
     expect(stats.height.count).toBe(0)
     expect(stats.length.count).toBe(0)
-    expect(stats.smallestFeature.count).toBe(0)
+    expect(stats.smallestLateralFeature.count).toBe(0)
+    expect(stats.smallestDepthFeature).toBeNull()
     expect(stats.width.stdDev).toBeNull()
   })
 
@@ -279,6 +336,7 @@ describe('calculateAggregateStats', () => {
         PartHeight_mm: 15,
         PartLength_mm: 50,
         SmallestLateralFeature_um: 5,
+        SmallestDepthFeature_um: 2,
       }),
     ]
     const stats = calculateAggregateStats(parts)
@@ -289,6 +347,7 @@ describe('calculateAggregateStats', () => {
     expect(stats.width.mean).toBe(25)
     expect(stats.width.median).toBe(25)
     expect(stats.width.stdDev).toBeNull() // N/A for single part
+    expect(stats.smallestDepthFeature!.stdDev).toBeNull() // N/A for single part
   })
 
   it('calculates correct stats for AC verification case (5 parts)', () => {
@@ -328,7 +387,9 @@ describe('calculateAggregateStats', () => {
     expect(stats.width.count).toBe(7)
     expect(stats.height.count).toBe(7)
     expect(stats.length.count).toBe(7)
-    expect(stats.smallestFeature.count).toBe(7)
+    expect(stats.smallestLateralFeature.count).toBe(7)
+    // smallestDepthFeature is null since test parts don't have it
+    expect(stats.smallestDepthFeature).toBeNull()
   })
 
   it('calculates independent statistics per dimension', () => {
@@ -338,12 +399,14 @@ describe('calculateAggregateStats', () => {
         PartHeight_mm: 10,
         PartLength_mm: 1000,
         SmallestLateralFeature_um: 1,
+        SmallestDepthFeature_um: 0.5,
       }),
       createTestPart({
         PartWidth_mm: 200,
         PartHeight_mm: 20,
         PartLength_mm: 2000,
         SmallestLateralFeature_um: 2,
+        SmallestDepthFeature_um: 1,
       }),
     ]
     const stats = calculateAggregateStats(parts)
@@ -352,6 +415,7 @@ describe('calculateAggregateStats', () => {
     expect(stats.width.mean).toBe(150)
     expect(stats.height.mean).toBe(15)
     expect(stats.length.mean).toBe(1500)
-    expect(stats.smallestFeature.mean).toBe(1.5)
+    expect(stats.smallestLateralFeature.mean).toBe(1.5)
+    expect(stats.smallestDepthFeature!.mean).toBe(0.75)
   })
 })

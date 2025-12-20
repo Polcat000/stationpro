@@ -1,30 +1,18 @@
 // src/components/analysis/AnalysisPanelGrid.tsx
 // Grid container for analysis panels with collapsible behavior
-// AC-3.10.1: All four panels collapsible
+// AC-3.10.1: All panels collapsible
+// AC-3.17.1-8: UnifiedStatsEnvelopePanel replaces separate stats/envelope panels
 
 import { CollapsiblePanel } from './CollapsiblePanel'
-import { AggregateStatsPanelContent } from './AggregateStatsPanel'
-import { EnvelopePanelContent } from './EnvelopePanel'
+import { UnifiedStatsEnvelopePanel } from './UnifiedStatsEnvelopePanel'
 import { DistributionChartsPanelContent } from './DistributionChartsPanel'
 import { ZoneAggregationPanelContent } from './ZoneAggregationPanel'
 
 /**
- * Panel configuration for the analysis grid.
- * Each panel has a unique ID, title, and layout class.
+ * Panel configuration for content-only panels that need CollapsiblePanel wrapper.
+ * UnifiedStatsEnvelopePanel is rendered separately as it has its own Card/Collapsible.
  */
-const PANEL_CONFIG = [
-  {
-    id: 'stats',
-    title: 'Aggregate Statistics',
-    gridClass: '',
-    Component: AggregateStatsPanelContent,
-  },
-  {
-    id: 'envelope',
-    title: 'Worst-Case Envelope',
-    gridClass: '',
-    Component: EnvelopePanelContent,
-  },
+const WRAPPED_PANELS = [
   {
     id: 'charts',
     title: 'Dimensional Distribution',
@@ -41,10 +29,11 @@ const PANEL_CONFIG = [
 
 /**
  * Grid container that renders all analysis panels with collapsible behavior.
- * Maintains the same layout as the original:
- * - Stats and Envelope side-by-side (md:grid-cols-2)
- * - Distribution Charts full-width
- * - Zone Aggregation full-width
+ *
+ * Layout (AC-3.17.1-8):
+ * - UnifiedStatsEnvelopePanel: full-width (md:col-span-2), self-contained
+ * - Distribution Charts: full-width (md:col-span-2)
+ * - Zone Aggregation: full-width (md:col-span-2)
  *
  * Each panel persists its collapse state to localStorage.
  *
@@ -58,7 +47,11 @@ const PANEL_CONFIG = [
 export function AnalysisPanelGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-2" data-testid="analysis-panel-grid">
-      {PANEL_CONFIG.map(({ id, title, gridClass, Component }) => (
+      {/* UnifiedStatsEnvelopePanel has its own Card/Collapsible with md:col-span-2 */}
+      <UnifiedStatsEnvelopePanel />
+
+      {/* Wrapped panels use CollapsiblePanel */}
+      {WRAPPED_PANELS.map(({ id, title, gridClass, Component }) => (
         <CollapsiblePanel
           key={id}
           panelId={id}

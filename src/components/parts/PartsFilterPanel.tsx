@@ -29,6 +29,7 @@ export interface PartsFilterPanelProps {
   filters: PartFilters
   onFiltersChange: (filters: PartFilters) => void
   uniqueSeries: string[]
+  uniqueFamilies: string[]
   onClearAll: () => void
 }
 
@@ -38,6 +39,7 @@ export function PartsFilterPanel({
   filters,
   onFiltersChange,
   uniqueSeries,
+  uniqueFamilies,
   onClearAll,
 }: PartsFilterPanelProps) {
   const handleCalloutChange = (value: string) => {
@@ -56,6 +58,21 @@ export function PartsFilterPanel({
     onFiltersChange({
       ...filters,
       series: filters.series.filter((s) => s !== value),
+    })
+  }
+
+  const handleFamilyChange = (value: string) => {
+    // Toggle family in array
+    const newFamily = filters.family.includes(value)
+      ? filters.family.filter((f) => f !== value)
+      : [...filters.family, value]
+    onFiltersChange({ ...filters, family: newFamily })
+  }
+
+  const handleFamilyRemove = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      family: filters.family.filter((f) => f !== value),
     })
   }
 
@@ -91,6 +108,47 @@ export function PartsFilterPanel({
                 className="pl-9"
               />
             </div>
+          </div>
+
+          {/* Family Multi-Select */}
+          <div className="space-y-2">
+            <Label>Part Family</Label>
+            {filters.family.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {filters.family.map((family) => (
+                  <Badge
+                    key={family}
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => handleFamilyRemove(family)}
+                  >
+                    {family} ×
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <Select onValueChange={handleFamilyChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select family..." />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueFamilies.map((family) => (
+                  <SelectItem
+                    key={family}
+                    value={family}
+                    disabled={filters.family.includes(family)}
+                  >
+                    {family}
+                    {filters.family.includes(family) && ' (selected)'}
+                  </SelectItem>
+                ))}
+                {uniqueFamilies.length === 0 && (
+                  <SelectItem value="_none" disabled>
+                    No families available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Series Multi-Select */}
